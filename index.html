@@ -182,6 +182,13 @@ section.list-section h2{font-size:15px;font-weight:600;letter-spacing:.02em;marg
 .event-row .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px}
 .event-row .del:hover{color:var(--accent)}
 
+.conv-head{
+  padding:10px 18px;background:var(--surface-2);color:var(--fg);border-bottom:1px solid var(--line);
+  font-family:'Fraunces',Georgia,serif;font-size:15px;font-weight:600;letter-spacing:.02em;
+}
+.conv-block{margin-bottom:28px;overflow:hidden}
+.conv-block:last-child{margin-bottom:0}
+.conv-head{border-bottom:2px solid var(--accent)}
 .empty-state{padding:34px 20px;text-align:center}
 .empty-state .display{font-size:18px;margin:0 0 6px}
 .empty-state p{color:var(--muted);font-size:13.5px;margin:0;max-width:40ch;margin-inline:auto}
@@ -319,7 +326,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     <div class="col">
       <section class="list-section">
         <h2>Exámenes</h2>
-        <div class="card" id="examenesCard">
+        <div id="examenesCard">
           <div class="empty-state"><p class="display">Cargando…</p></div>
         </div>
       </section>
@@ -515,7 +522,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     {"id":"ec-examen-1c","date":"2027-01-25","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Estructura de Computadores","notes":"Tipo test, 40 preguntas · 50% de la nota final","done":false},
     {"id":"pp-evidencia-4","date":"2027-01-25","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 4: guión de vídeo educativo","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 10% del portafolio. Guión de vídeo de 3-5 min para alumnado de Secundaria. Fecha estimada. Ver explicación en Campus.","done":false},
     {"id":"pp-portafolio-1c","date":"2027-01-12","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 1ª convocatoria","type":"tarea","subject":"Proyectos de Programación","notes":"","done":false},
-    {"id":"taf-examen-1c","date":"2027-01-27","time":"20:00","timeEnd":"22:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-examen-1c","date":"2027-01-27","time":"20:00","timeEnd":"22:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"Opción múltiple, 24 preguntas · 60% de la nota final","done":false},
     {"id":"fc-examen-1c","date":"2027-01-28","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Fundamentos de Computadores","notes":"Tipo test, 20-25 preguntas · 60% de la nota final","done":false},
     {"id":"eda-examen-1c","date":"2027-01-29","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Estructura de Datos y Algoritmos","notes":"10 preguntas de selección y 3 de desarrollo (justificar respuestas) · 60% de la nota final","done":false},
     {"id":"pp-examen-1c","date":"2027-02-03","time":"18:00","timeEnd":"22:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Proyectos de Programación","notes":"60% de la nota final · preguntas de desarrollo, multi-opción, verdadero/falso y de arrastrar elementos","done":false},
@@ -526,7 +533,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     {"id":"ec-examen-2c","date":"2027-05-31","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Estructura de Computadores","notes":"Tipo test, 40 preguntas · 50% de la nota final","done":false},
     {"id":"pp-examen-2c","date":"2027-06-09","time":"18:00","timeEnd":"22:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Proyectos de Programación","notes":"60% de la nota final · preguntas de desarrollo, multi-opción, verdadero/falso y de arrastrar elementos","done":false},
     {"id":"pp-portafolio-2c","date":"2027-06-06","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 2ª convocatoria","type":"tarea","subject":"Proyectos de Programación","notes":"","done":false},
-    {"id":"taf-examen-2c","date":"2027-06-02","time":"20:00","timeEnd":"22:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-examen-2c","date":"2027-06-02","time":"20:00","timeEnd":"22:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"Opción múltiple, 24 preguntas · 60% de la nota final","done":false},
     {"id":"fc-examen-2c","date":"2027-06-03","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Fundamentos de Computadores","notes":"Tipo test, 20-25 preguntas · 60% de la nota final","done":false},
     {"id":"eda-examen-2c","date":"2027-06-04","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Estructura de Datos y Algoritmos","notes":"10 preguntas de selección y 3 de desarrollo (justificar respuestas) · 60% de la nota final","done":false},
     {"id":"calc-entrega-2c","date":"2027-06-07","time":"23:59","timeEnd":"","title":"Entrega de actividades (tipo test) — 2ª convocatoria","type":"tarea","subject":"Cálculo","notes":"Fecha no definitiva","done":false},
@@ -945,7 +952,42 @@ form.add-form textarea{resize:vertical;min-height:50px}
   }
 
   function renderExamenes(){
-    renderFilteredList('examenesCard', 'examen', 'No hay exámenes programados.');
+    var card = document.getElementById('examenesCard');
+    var iso = todayIso();
+    var list = events.filter(function(e){ return e.type === 'examen' && e.date >= iso; })
+      .sort(function(a,b){
+        if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+        return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0);
+      });
+    card.innerHTML = '';
+    if(!list.length){
+      var es = document.createElement('div');
+      es.className = 'empty-state';
+      es.innerHTML = '<p class="display">Sin fechas</p><p>No hay exámenes programados.</p>';
+      var emptyCard = document.createElement('div');
+      emptyCard.className = 'card';
+      emptyCard.appendChild(es);
+      card.appendChild(emptyCard);
+      return;
+    }
+    var groups = [
+      {label:'1ª convocatoria', items:[]},
+      {label:'2ª convocatoria', items:[]}
+    ];
+    list.forEach(function(e){
+      groups[/2\s*ª?\s*convocatoria/i.test(e.title) ? 1 : 0].items.push(e);
+    });
+    groups.forEach(function(g){
+      if(!g.items.length) return;
+      var block = document.createElement('div');
+      block.className = 'card conv-block';
+      var h = document.createElement('div');
+      h.className = 'conv-head';
+      h.textContent = g.label;
+      block.appendChild(h);
+      g.items.forEach(function(e){ block.appendChild(buildEventRow(e, true)); });
+      card.appendChild(block);
+    });
   }
 
   function renderAll(){
