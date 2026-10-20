@@ -1,0 +1,888 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<script>
+(function(){
+  try{
+    var saved = window.localStorage.getItem('mi-semestre-theme-v1');
+    document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+  }catch(e){
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+</script>
+</head><body>
+<title>Mi Semestre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* layout: narrow column for header/list/form, but the month grid itself breaks out to the full width */
+/* color encodes ASIGNATURA (subject); type is shown as text; tareas get a checkbox */
+:root{
+  --bg:#f7f3ea;
+  --surface:#ffffff;
+  --surface-2:#efe8d8;
+  --fg:#1b1f2a;
+  --muted:#6e7180;
+  --line:#ddd2b8;
+  --accent:#9b2334;
+  --focus:#2f4a6b;
+  --warn:#b8860b;
+  --warn-text:#ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14161e;
+    --surface:#1c1f29;
+    --surface-2:#242836;
+    --fg:#ece7da;
+    --muted:#9a9eb0;
+    --line:#333750;
+    --accent:#e2576a;
+    --focus:#6fa0da;
+    --warn:#e0b84a;
+    --warn-text:#1b1f2a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14161e;
+  --surface:#1c1f29;
+  --surface-2:#242836;
+  --fg:#ece7da;
+  --muted:#9a9eb0;
+  --line:#333750;
+  --accent:#e2576a;
+  --focus:#6fa0da;
+  --warn:#e0b84a;
+  --warn-text:#1b1f2a;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'Inter',system-ui,sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+.page{padding-block:28px 60px}
+.col{max-width:760px;margin:0 auto}
+
+h1,h2,.display{font-family:'Fraunces',Georgia,serif}
+
+header.top{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+header.top .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.top h1{font-size:34px;font-weight:600;margin:0;line-height:1.1;text-wrap:balance}
+header.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+
+.cal-section{margin-bottom:20px}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;margin-bottom:12px}
+.nav .month-label{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;text-transform:capitalize}
+.nav .btns{display:flex;gap:6px}
+.nav button{
+  width:34px;height:34px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--fg);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+.nav button:hover{border-color:var(--accent)}
+.nav button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--focus);outline-offset:2px;
+}
+.nav .today-btn{width:auto;padding:0 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600}
+
+.grid-card{padding:16px 16px 14px}
+
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.dow span{text-align:center;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.day{
+  min-width:0;min-height:148px;border-radius:12px;border:1px solid transparent;
+  background:var(--surface-2);padding:8px 7px 7px;display:flex;flex-direction:column;gap:5px;
+  cursor:pointer;position:relative;overflow:hidden;
+}
+.day.outside{opacity:.35}
+.day.today{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, var(--surface-2))}
+.day.selected{box-shadow:inset 0 0 0 2px var(--focus)}
+.day.has-task{border-color:var(--accent);border-style:dashed}
+.day.has-exam{border-color:var(--warn);border-style:dashed}
+.day.has-task::before{
+  content:"Entrega";position:absolute;top:0;left:0;right:0;height:16px;
+  background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  text-align:center;line-height:16px;border-radius:9px 9px 0 0;
+}
+.day.has-task.today::before{background:var(--fg)}
+.day.has-exam::after{
+  content:"Examen";position:absolute;left:0;right:0;height:16px;
+  background:var(--warn);color:var(--warn-text);font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  text-align:center;line-height:16px;top:0;
+}
+.day.has-exam:not(.has-task)::after{border-radius:9px 9px 0 0}
+.day.has-task.has-exam::after{top:16px}
+.day.has-task .num{margin-top:16px}
+.day.has-exam:not(.has-task) .num{margin-top:16px}
+.day.has-task.has-exam .num{margin-top:32px}
+.day .num{
+  font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);align-self:flex-start;
+  line-height:20px;
+}
+.day.today .num{
+  background:var(--accent);color:#fff;border-radius:999px;padding:0 8px;font-weight:700;
+}
+.day .chips{display:flex;flex-direction:column;gap:4px;overflow:hidden;flex:1;min-width:0}
+.chip{
+  display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:7px;font-size:12.5px;font-weight:600;
+  min-width:0;line-height:1.3;
+}
+.chip .chip-prefix{font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:10.5px;flex-shrink:0}
+.chip .chip-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.chip.done .chip-text{text-decoration:line-through;opacity:.6}
+.chip input[type="checkbox"]{width:14px;height:14px;margin:0;flex-shrink:0;accent-color:var(--fg);cursor:pointer;background:var(--surface)}
+.day .more{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.legend .item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
+.legend .dot{width:8px;height:8px;border-radius:50%;display:block;flex-shrink:0}
+.legend.empty{color:var(--muted);font-weight:400;font-style:italic}
+
+.day-detail{padding:14px 16px;margin-bottom:18px}
+.day-detail h3{margin:0 0 10px;font-size:14px;font-weight:600;color:var(--muted);text-transform:capitalize}
+.day-detail .empty{font-size:13px;color:var(--muted)}
+
+section.list-section{margin-bottom:18px}
+section.list-section h2{font-size:15px;font-weight:600;letter-spacing:.02em;margin:0 0 10px}
+
+.event-row{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--line)}
+.event-row:last-child{border-bottom:none}
+.event-row .datebox{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);min-width:68px;padding-top:3px}
+.event-row .bar{width:5px;border-radius:3px;align-self:stretch;flex-shrink:0}
+.event-row .task-check{width:19px;height:19px;margin-top:3px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}
+.event-row .body{flex:1;min-width:0}
+.event-row .title-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;row-gap:2px}
+.subj-prefix{font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:13px}
+.event-row .title{font-weight:600;font-size:17px}
+.event-row.done .title{text-decoration:line-through;opacity:.6}
+.event-row.done .notes{opacity:.6}
+.event-row .meta{font-size:13px;color:var(--muted);margin-top:4px}
+.event-row .notes{font-size:13.5px;color:var(--muted);margin-top:5px}
+.event-row .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px}
+.event-row .del:hover{color:var(--accent)}
+
+.empty-state{padding:34px 20px;text-align:center}
+.empty-state .display{font-size:18px;margin:0 0 6px}
+.empty-state p{color:var(--muted);font-size:13.5px;margin:0;max-width:40ch;margin-inline:auto}
+
+.add-toggle{
+  width:100%;padding:13px;border-radius:14px;border:1px dashed var(--line);
+  background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;
+}
+.add-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+form.add-form{padding:16px;display:flex;flex-direction:column;gap:10px}
+form.add-form .row{display:flex;gap:8px;flex-wrap:wrap}
+form.add-form label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;display:block;margin-bottom:4px}
+form.add-form .field{flex:1;min-width:120px}
+form.add-form input,form.add-form select,form.add-form textarea{
+  width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--fg);font-family:'Inter',sans-serif;font-size:13.5px;
+}
+form.add-form textarea{resize:vertical;min-height:50px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.form-actions button{
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--fg);cursor:pointer;
+}
+.form-actions button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.form-actions button.primary:hover{opacity:.9}
+.status-msg{font-size:12px;color:var(--muted);min-height:14px}
+.status-msg.err{color:var(--accent)}
+</style>
+
+<div class="page">
+
+  <div class="col">
+    <header class="top">
+      <span class="eyebrow">Universidad</span>
+      <h1>Mi Semestre</h1>
+      <span class="sub">Exámenes, tareas y clases, por asignatura. Nada de trabajo aquí.</span>
+    </header>
+  </div>
+
+  <div class="cal-section">
+    <div class="card nav">
+      <div class="btns">
+        <button type="button" id="prevMonth" aria-label="Mes anterior">‹</button>
+        <button type="button" id="todayBtn" class="today-btn">Hoy</button>
+      </div>
+      <span class="month-label" id="monthLabel">—</span>
+      <div class="btns">
+        <button type="button" id="themeToggle" aria-label="Cambiar tema">☀</button>
+        <button type="button" id="nextMonth" aria-label="Mes siguiente">›</button>
+      </div>
+    </div>
+
+    <div class="card grid-card">
+      <div class="dow" id="dowRow"></div>
+      <div class="days" id="daysGrid"></div>
+      <div class="legend" id="legendRow"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card day-detail" id="dayDetail" hidden>
+      <h3 id="dayDetailTitle">—</h3>
+      <div id="dayDetailBody"></div>
+    </div>
+
+    <section class="list-section">
+      <h2>Próximas fechas</h2>
+      <div class="card" id="upcomingCard">
+        <div class="empty-state"><p class="display">Cargando…</p></div>
+      </div>
+    </section>
+
+    <button type="button" class="add-toggle" id="addToggle">+ Agregar fecha</button>
+
+    <form class="card add-form" id="addForm" hidden>
+      <div class="row">
+        <div class="field">
+          <label for="f-date">Fecha</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="field">
+          <label for="f-time">Hora inicio</label>
+          <input type="time" id="f-time">
+        </div>
+        <div class="field">
+          <label for="f-time-end">Hora fin</label>
+          <input type="time" id="f-time-end">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="f-subject">Asignatura</label>
+          <input type="text" id="f-subject" list="subjectOptions" maxlength="60" placeholder="Ej. Cálculo" required>
+          <datalist id="subjectOptions"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-type">Tipo</label>
+          <select id="f-type">
+            <option value="clase">Clase</option>
+            <option value="examen">Examen</option>
+            <option value="tarea">Tarea</option>
+            <option value="tutoria">Tutoría</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-title">Título</label>
+        <input type="text" id="f-title" maxlength="140" placeholder="Ej. Sesión teórica: cálculo diferencial" required>
+      </div>
+      <div class="field">
+        <label for="f-notes">Notas (opcional)</label>
+        <textarea id="f-notes" maxlength="400" placeholder="Sala, temas a repasar, materiales..."></textarea>
+      </div>
+      <div class="status-msg" id="formStatus"></div>
+      <div class="form-actions">
+        <button type="button" id="cancelAdd">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var DIAS = ['L','M','X','J','V','S','D'];
+  var TYPE_LABEL = {examen:'Examen', tarea:'Tarea', clase:'Clase', tutoria:'Tutoría', otro:'Otro'};
+  var MAX_CHIPS = 3;
+
+  var SUBJECT_OVERRIDES = {
+    'Cálculo': {light:'#5b3fa0', dark:'#b89bf5'},
+    'Fundamentos de Computadores': {light:'#b5651d', dark:'#f0a35c'},
+    'Estructura de Computadores': {light:'#157a5f', dark:'#4fd9ab'},
+    'Teoría de Autómatas y Lenguajes Formales': {light:'#1f5fa6', dark:'#7fb3f0'},
+    'Estructura de Datos y Algoritmos': {light:'#a8285f', dark:'#f08fc0'},
+    'Proyectos de Programación': {light:'#0f7a86', dark:'#5fd1dd'}
+  };
+  var SUBJECT_PALETTE = [
+    {light:'#1f7a6c', dark:'#5fd9c0'},
+    {light:'#b8860b', dark:'#e0b84a'},
+    {light:'#b23a48', dark:'#e8818f'},
+    {light:'#2f5fa6', dark:'#86b4f0'},
+    {light:'#6b7a1f', dark:'#b8cf63'},
+    {light:'#9b4f96', dark:'#dba0d8'}
+  ];
+
+  function hashStr(s){
+    var h = 0;
+    for(var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+    return Math.abs(h);
+  }
+  function normSubject(s){ return (s || 'Otro').trim(); }
+  function subjectPair(subject){
+    var key = normSubject(subject);
+    if(SUBJECT_OVERRIDES[key]) return SUBJECT_OVERRIDES[key];
+    return SUBJECT_PALETTE[hashStr(key) % SUBJECT_PALETTE.length];
+  }
+  function isDark(){
+    var attr = document.documentElement.getAttribute('data-theme');
+    if(attr === 'dark') return true;
+    if(attr === 'light') return false;
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function subjectColor(subject){
+    var pair = subjectPair(subject);
+    return isDark() ? pair.dark : pair.light;
+  }
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    var n = parseInt(hex, 16);
+    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+  }
+  function subjectTint(subject, alpha){
+    var c = hexToRgb(subjectColor(subject));
+    return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + alpha + ')';
+  }
+
+  var dowRow = document.getElementById('dowRow');
+  DIAS.forEach(function(d){ var s=document.createElement('span'); s.textContent=d; dowRow.appendChild(s); });
+
+  var today = new Date();
+  var viewYear = today.getFullYear();
+  var viewMonth = today.getMonth();
+  var selectedDate = null;
+  var events = []; // {id, date, time, timeEnd, title, type, subject, notes, done}
+
+  // Persistencia local (localStorage): este archivo se abre como HTML suelto,
+  // sin backend de Claude, así que los eventos viven en este navegador/equipo.
+  // La primera vez se precargan con el cronograma completo del semestre.
+  var STORAGE_KEY = 'mi-semestre-events-v1';
+
+  var SEED_EVENTS = [
+    {"id":"calc-sesion-01","date":"2026-10-16","time":"19:00","timeEnd":"20:00","title":"Sesión teórica: funciones de variable real","type":"clase","subject":"Cálculo","notes":"","done":true},
+    {"id":"calc-tutoria-inicial","date":"2026-10-16","time":"18:00","timeEnd":"19:00","title":"Tutoría Colectiva de presentación","type":"tutoria","subject":"Cálculo","notes":"","done":true},
+    {"id":"pp-sesion-01","date":"2026-10-15","time":"18:00","timeEnd":"20:00","title":"POO: Lenguaje Java","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-sesion-01","date":"2026-10-19","time":"18:00","timeEnd":"20:00","title":"Presentación e introducción a la Estructura de Computadores y modelo de Von Neumann","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"ec-sesion-02","date":"2026-10-19","time":"20:00","timeEnd":"22:00","title":"Repertorio de instrucciones (ISA) y direccionamiento","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-01","date":"2026-10-19","time":"18:00","timeEnd":"20:00","title":"Tutoría Colectiva: presentación de la asignatura. Introducción","type":"tutoria","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-02","date":"2026-10-20","time":"18:00","timeEnd":"20:00","title":"Sesión teórica: cálculo diferencial","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-01","date":"2026-10-20","time":"18:00","timeEnd":"20:00","title":"Tutoría Colectiva de presentación / Tema 1: El lenguaje de programación JAVA","type":"tutoria","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-01","date":"2026-10-20","time":"20:00","timeEnd":"22:00","title":"Tutoría inicial","type":"tutoria","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-sesion-02","date":"2026-10-21","time":"20:00","timeEnd":"22:00","title":"Introducción a los autómatas y lenguajes formales","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"calc-sesion-03","date":"2026-10-22","time":"20:00","timeEnd":"22:00","title":"Sesión teórico/práctica: cálculo diferencial","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-02","date":"2026-10-23","time":"18:00","timeEnd":"20:00","title":"Tema 1: El lenguaje de programación JAVA","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"pp-sesion-02","date":"2026-10-22","time":"18:00","timeEnd":"20:00","title":"Elementos POO: Herencia-polimorfismo","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"fc-sesion-02","date":"2026-10-26","time":"18:00","timeEnd":"20:00","title":"Tema 1: Compuertas lógicas. Álgebra de Boole. Simplificación de funciones","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"eda-sesion-03","date":"2026-10-27","time":"18:00","timeEnd":"20:00","title":"Tema 1: JAVA / Tema 2: Algoritmos recursivos","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-03","date":"2026-10-27","time":"20:00","timeEnd":"22:00","title":"Introducción a los autómatas y lenguajes formales (cont.)","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"calc-sesion-04","date":"2026-10-29","time":"20:00","timeEnd":"22:00","title":"Sesión práctica: cálculo diferencial","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"fc-sesion-03","date":"2026-10-30","time":"18:00","timeEnd":"20:00","title":"Tema 1: Formas canónicas y Mapas de Karnaugh","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"pp-sesion-03","date":"2026-10-29","time":"18:00","timeEnd":"20:00","title":"Elementos POO: Interfaces","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"fc-sesion-04","date":"2026-11-02","time":"18:00","timeEnd":"20:00","title":"Tema 1: Sistemas numéricos digitales. Códigos digitales","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-05","date":"2026-11-03","time":"18:00","timeEnd":"20:00","title":"Sesión teórico-práctica: algoritmos numéricos","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-04","date":"2026-11-03","time":"18:00","timeEnd":"20:00","title":"Tema 3: Análisis de algoritmos","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-04","date":"2026-11-03","time":"20:00","timeEnd":"22:00","title":"Autómatas finitos","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-sesion-05","date":"2026-11-04","time":"20:00","timeEnd":"22:00","title":"Autómatas finitos (cont.)","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"eda-sesion-05","date":"2026-11-06","time":"18:00","timeEnd":"20:00","title":"Tema 4: Tipos abstractos y concretos de datos","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"fc-sesion-05","date":"2026-11-06","time":"18:00","timeEnd":"20:00","title":"Tema 2: Diseño y síntesis de circuitos combinacionales","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"pp-sesion-04","date":"2026-11-05","time":"18:00","timeEnd":"20:00","title":"Sesión práctica para actividad 1","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"fc-evidencia-1","date":"2026-11-08","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 1: simplificación de funciones lógicas","type":"tarea","subject":"Fundamentos de Computadores","notes":"Evaluación continua · 10% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"fc-sesion-06","date":"2026-11-09","time":"18:00","timeEnd":"20:00","title":"Tema 2: Implementación de un sistema digital con circuitos combinacionales","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-actividad-1","date":"2026-11-10","time":"","timeEnd":"","title":"Entrega recomendada — Actividad 1: cálculo diferencial y algoritmos numéricos","type":"tarea","subject":"Cálculo","notes":"Evaluación continua · 20% del portafolio. Problemas tipo test y a desarrollar. Fecha no definitiva.","done":false},
+    {"id":"calc-sesion-06","date":"2026-11-10","time":"18:00","timeEnd":"20:00","title":"Sesión teórico-práctica: algoritmos numéricos","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-evidencia-1","date":"2026-11-10","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 1: JAVA, análisis de algoritmos y recursión","type":"tarea","subject":"Estructura de Datos y Algoritmos","notes":"Evaluación continua · 10% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"eda-sesion-06","date":"2026-11-10","time":"18:00","timeEnd":"20:00","title":"Tema 4: Tipos abstractos y concretos de datos / Tema 5: Cola con prioridad y montículo binario","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-06","date":"2026-11-10","time":"20:00","timeEnd":"22:00","title":"Condición de no regularidad","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-sesion-07","date":"2026-11-11","time":"20:00","timeEnd":"22:00","title":"Operaciones sobre autómatas finitos","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"ec-sesion-03","date":"2026-11-13","time":"18:00","timeEnd":"20:00","title":"Programación en Ensamblador I — Instrucciones aritmético-lógicas y control, subrutinas, IEEE754","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"pp-sesion-05","date":"2026-11-12","time":"18:00","timeEnd":"20:00","title":"Diagramas de clases","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-sesion-04","date":"2026-11-16","time":"18:00","timeEnd":"20:00","title":"Programación en Ensamblador II — Clase práctica (complemento a 2 y coma flotante)","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"ec-sesion-05","date":"2026-11-16","time":"20:00","timeEnd":"22:00","title":"Proceso de compilación, banco de registros y operaciones básicas","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-07","date":"2026-11-16","time":"18:00","timeEnd":"20:00","title":"Tema 2: Ejemplos prácticos de circuitos combinacionales","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"eda-sesion-07","date":"2026-11-17","time":"18:00","timeEnd":"20:00","title":"Tema 6: Árboles","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-08","date":"2026-11-17","time":"20:00","timeEnd":"22:00","title":"Operaciones sobre autómatas finitos (cont.)","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"eda-evidencia-2","date":"2026-11-20","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 2: listas, pilas y colas","type":"tarea","subject":"Estructura de Datos y Algoritmos","notes":"Evaluación continua · 15% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"eda-sesion-08","date":"2026-11-20","time":"18:00","timeEnd":"20:00","title":"Tema 6: Árboles","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"fc-sesion-08","date":"2026-11-20","time":"18:00","timeEnd":"20:00","title":"Tema 3: Circuitos digitales secuenciales. Biestables. Registros y Contadores","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"pp-evidencia-1","date":"2026-11-18","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 1: vídeo sobre elementos POO","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 5% del portafolio. Vídeo de 3-5 min sobre los elementos POO vistos en clase. Fecha estimada. Ver explicación en Campus.","done":false},
+    {"id":"pp-sesion-06","date":"2026-11-19","time":"18:00","timeEnd":"20:00","title":"Diagramas de casos de uso","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-sesion-06","date":"2026-11-23","time":"18:00","timeEnd":"20:00","title":"Jerarquía de memoria y memoria caché I","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"ec-sesion-07","date":"2026-11-23","time":"20:00","timeEnd":"22:00","title":"Memoria caché II, memoria virtual y almacenamiento secundario","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-09","date":"2026-11-23","time":"18:00","timeEnd":"20:00","title":"Tema 3: Diseño y síntesis de circuitos secuenciales sincrónicos","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-07","date":"2026-11-24","time":"18:00","timeEnd":"20:00","title":"Clase teórica/práctica: Matlab","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-09","date":"2026-11-24","time":"18:00","timeEnd":"20:00","title":"Tema 7: MAPs y tabla hash","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-09","date":"2026-11-24","time":"20:00","timeEnd":"22:00","title":"Expresiones regulares","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"taf-sesion-10","date":"2026-11-25","time":"20:00","timeEnd":"22:00","title":"Expresiones regulares (cont.)","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"eda-sesion-10","date":"2026-11-27","time":"18:00","timeEnd":"20:00","title":"Tema 8: Algoritmos de ordenamiento interno. Análisis de complejidad","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"pp-sesion-07","date":"2026-11-26","time":"18:00","timeEnd":"20:00","title":"Sesión práctica para actividad 2","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-sesion-08","date":"2026-11-30","time":"18:00","timeEnd":"20:00","title":"Sistema de entrada/salida (E/S)","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"ec-sesion-09","date":"2026-11-30","time":"20:00","timeEnd":"22:00","title":"Estructura y funcionamiento de buses","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-10","date":"2026-11-30","time":"18:00","timeEnd":"20:00","title":"Tema 3: Ejemplos prácticos de circuitos secuenciales","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-08","date":"2026-12-01","time":"18:00","timeEnd":"20:00","title":"Sesión teórica: cálculo integral","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-11","date":"2026-12-01","time":"18:00","timeEnd":"20:00","title":"Tema 9: TAD Grafo","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"pp-evidencia-2","date":"2026-11-29","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 2: diagramas de clases y casos de uso","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 5% del portafolio. Caso real con cierta complejidad de gestión. Fecha estimada. Ver explicación en Campus.","done":false},
+    {"id":"taf-sesion-11","date":"2026-12-01","time":"20:00","timeEnd":"22:00","title":"Gramáticas","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"pp-sesion-08","date":"2026-12-03","time":"18:00","timeEnd":"20:00","title":"Patrones de diseño","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-portafolio-p1-1c","date":"2026-12-06","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 1 (1ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Desarrollo de un algoritmo de manipulación y filtrado de cadenas de texto / estructuras de datos en memoria.","done":false},
+    {"id":"fc-evidencia-2","date":"2026-12-06","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 2: diseño e implementación de sistema digital combinacional","type":"tarea","subject":"Fundamentos de Computadores","notes":"Evaluación continua · 15% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"ec-sesion-10","date":"2026-12-07","time":"18:00","timeEnd":"20:00","title":"Organización del procesador I — Componentes hardware y camino de datos","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-11","date":"2026-12-07","time":"18:00","timeEnd":"20:00","title":"Tema 4: Introducción al lenguaje ensamblador","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-09","date":"2026-12-11","time":"18:00","timeEnd":"20:00","title":"Sesión teórico-práctica: cálculo integral","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"pp-sesion-09","date":"2026-12-10","time":"18:00","timeEnd":"20:00","title":"Arquitecturas de 3 capas","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-sesion-11","date":"2026-12-14","time":"18:00","timeEnd":"20:00","title":"Organización del procesador II — Unidad de control y multiprocesamiento","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-12","date":"2026-12-14","time":"18:00","timeEnd":"20:00","title":"Tema 4: Ejemplos, implementación y simulación de aplicaciones","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-10","date":"2026-12-15","time":"18:00","timeEnd":"20:00","title":"Sesión práctica: cálculo integral","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-evidencia-3","date":"2026-12-15","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 3: árboles","type":"tarea","subject":"Estructura de Datos y Algoritmos","notes":"Evaluación continua · 15% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"eda-portafolio-1c","date":"2026-12-15","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 1ª convocatoria","type":"tarea","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"eda-sesion-12","date":"2026-12-15","time":"18:00","timeEnd":"20:00","title":"Tema 9: TAD Grafo","type":"clase","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-sesion-12","date":"2026-12-15","time":"20:00","timeEnd":"22:00","title":"Aplicación de autómatas finitos en problemas de pattern matching","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"calc-sesion-11","date":"2026-12-18","time":"18:00","timeEnd":"20:00","title":"Sesión teórico-práctica: derivación numérica","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"ec-sesion-12","date":"2026-12-18","time":"18:00","timeEnd":"20:00","title":"Segmentación de instrucciones (pipelining) I","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"pp-sesion-10","date":"2026-12-17","time":"18:00","timeEnd":"20:00","title":"Sesión práctica para actividad 3","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"pp-sesion-11","date":"2027-01-07","time":"18:00","timeEnd":"20:00","title":"Buenas prácticas en desarrollo de código POO","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"ec-portafolio-p2-1c","date":"2027-01-10","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 2 (1ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Análisis de rendimiento y localidad de memoria en algoritmos de computación general (simulación de caché).","done":false},
+    {"id":"fc-evidencia-3","date":"2027-01-10","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 3: diseño y simulación de sistema digital secuencial sincrónico","type":"tarea","subject":"Fundamentos de Computadores","notes":"Evaluación continua · 15% del portafolio. Ver explicación en Campus.","done":false},
+    {"id":"ec-sesion-13","date":"2027-01-11","time":"18:00","timeEnd":"20:00","title":"Segmentación de instrucciones II y procesadores superescalares","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
+    {"id":"fc-sesion-13","date":"2027-01-11","time":"18:00","timeEnd":"20:00","title":"Tutoría colectiva. Ejercicios y consultas relacionadas con el examen final","type":"tutoria","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"calc-sesion-12","date":"2027-01-12","time":"18:00","timeEnd":"20:00","title":"Sesión teórico-práctica: integración numérica","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"eda-sesion-13","date":"2027-01-12","time":"18:00","timeEnd":"20:00","title":"Tutoría Colectiva de recapitulación","type":"tutoria","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"taf-portafolio-1c","date":"2027-01-12","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 1ª convocatoria","type":"tarea","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"El documento ponía 12/01/26 — corregido a 2027 para que coincida con el curso.","done":false},
+    {"id":"taf-sesion-13","date":"2027-01-12","time":"20:00","timeEnd":"22:00","title":"Tutoría Colectiva de recapitulación","type":"tutoria","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"calc-actividad-2","date":"2027-01-15","time":"","timeEnd":"","title":"Entrega recomendada — Actividad 2: cálculo integral y métodos numéricos","type":"tarea","subject":"Cálculo","notes":"Evaluación continua · 20% del portafolio. Problemas tipo test. Fecha no definitiva.","done":false},
+    {"id":"calc-entrega-1c","date":"2027-01-15","time":"23:59","timeEnd":"","title":"Entrega de actividades (tipo test) — 1ª convocatoria","type":"tarea","subject":"Cálculo","notes":"Fecha no definitiva","done":false},
+    {"id":"calc-sesion-13","date":"2027-01-15","time":"18:00","timeEnd":"19:00","title":"Clase práctica: repaso","type":"clase","subject":"Cálculo","notes":"","done":false},
+    {"id":"calc-tutoria-final","date":"2027-01-15","time":"19:00","timeEnd":"20:00","title":"Tutoría Colectiva de recapitulación","type":"tutoria","subject":"Cálculo","notes":"","done":false},
+    {"id":"pp-evidencia-3","date":"2027-01-13","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 3: arquitectura de 3 capas","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 20% del portafolio. Solución con arquitectura de 3 capas y elementos POO. El documento ponía 15/01/2024 (año probablemente mal escrito); fecha estimada. Ver explicación en Campus.","done":false},
+    {"id":"pp-sesion-12","date":"2027-01-08","time":"18:00","timeEnd":"20:00","title":"Implementaciones de código","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"pp-sesion-13","date":"2027-01-14","time":"18:00","timeEnd":"20:00","title":"Sesión práctica para actividad 4","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"fc-portafolio-1c","date":"2027-01-21","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 1ª convocatoria","type":"tarea","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"ec-examen-1c","date":"2027-01-25","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Estructura de Computadores","notes":"Tipo test, 40 preguntas · 50% de la nota final","done":false},
+    {"id":"pp-evidencia-4","date":"2027-01-25","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 4: guión de vídeo educativo","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 10% del portafolio. Guión de vídeo de 3-5 min para alumnado de Secundaria. Fecha estimada. Ver explicación en Campus.","done":false},
+    {"id":"pp-portafolio-1c","date":"2027-01-12","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 1ª convocatoria","type":"tarea","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"taf-examen-1c","date":"2027-01-27","time":"20:00","timeEnd":"22:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"fc-examen-1c","date":"2027-01-28","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Fundamentos de Computadores","notes":"Tipo test, 20-25 preguntas · 60% de la nota final","done":false},
+    {"id":"eda-examen-1c","date":"2027-01-29","time":"18:00","timeEnd":"20:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Estructura de Datos y Algoritmos","notes":"10 preguntas de selección y 3 de desarrollo (justificar respuestas) · 60% de la nota final","done":false},
+    {"id":"pp-examen-1c","date":"2027-02-03","time":"18:00","timeEnd":"22:00","title":"Examen — 1ª convocatoria","type":"examen","subject":"Proyectos de Programación","notes":"60% de la nota final · preguntas de desarrollo, multi-opción, verdadero/falso y de arrastrar elementos","done":false},
+    {"id":"calc-examen-1c","date":"2027-02-01","time":"18:30","timeEnd":"19:30","title":"Examen (preguntas a desarrollar) — 1ª convocatoria","type":"examen","subject":"Cálculo","notes":"Problemas a desarrollar, se sube en PDF · 60% de la nota final","done":false},
+    {"id":"taf-portafolio-2c","date":"2027-05-12","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 2ª convocatoria","type":"tarea","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"eda-portafolio-2c","date":"2027-05-24","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 2ª convocatoria","type":"tarea","subject":"Estructura de Datos y Algoritmos","notes":"","done":false},
+    {"id":"fc-portafolio-2c","date":"2027-05-27","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 2ª convocatoria","type":"tarea","subject":"Fundamentos de Computadores","notes":"","done":false},
+    {"id":"ec-examen-2c","date":"2027-05-31","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Estructura de Computadores","notes":"Tipo test, 40 preguntas · 50% de la nota final","done":false},
+    {"id":"pp-examen-2c","date":"2027-06-09","time":"18:00","timeEnd":"22:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Proyectos de Programación","notes":"60% de la nota final · preguntas de desarrollo, multi-opción, verdadero/falso y de arrastrar elementos","done":false},
+    {"id":"pp-portafolio-2c","date":"2027-06-06","time":"23:59","timeEnd":"","title":"Entrega de portafolio — 2ª convocatoria","type":"tarea","subject":"Proyectos de Programación","notes":"","done":false},
+    {"id":"taf-examen-2c","date":"2027-06-02","time":"20:00","timeEnd":"22:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
+    {"id":"fc-examen-2c","date":"2027-06-03","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Fundamentos de Computadores","notes":"Tipo test, 20-25 preguntas · 60% de la nota final","done":false},
+    {"id":"eda-examen-2c","date":"2027-06-04","time":"18:00","timeEnd":"20:00","title":"Examen — 2ª convocatoria","type":"examen","subject":"Estructura de Datos y Algoritmos","notes":"10 preguntas de selección y 3 de desarrollo (justificar respuestas) · 60% de la nota final","done":false},
+    {"id":"calc-entrega-2c","date":"2027-06-07","time":"23:59","timeEnd":"","title":"Entrega de actividades (tipo test) — 2ª convocatoria","type":"tarea","subject":"Cálculo","notes":"Fecha no definitiva","done":false},
+    {"id":"calc-examen-2c","date":"2027-06-07","time":"18:30","timeEnd":"19:30","title":"Examen (preguntas a desarrollar) — 2ª convocatoria","type":"examen","subject":"Cálculo","notes":"Problemas a desarrollar, se sube en PDF · 60% de la nota final","done":false},
+    {"id":"ec-portafolio-p1-2c","date":"2027-06-20","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 1 (2ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Desarrollo de un algoritmo de manipulación y filtrado de cadenas de texto / estructuras de datos en memoria.","done":false},
+    {"id":"ec-portafolio-p2-2c","date":"2027-06-20","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 2 (2ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Análisis de rendimiento y localidad de memoria en algoritmos de computación general (simulación de caché).","done":false}
+  ];
+
+  // Correcciones puntuales de fechas ya detectadas tras la primera carga
+  // (p.ej. Proyectos de Programación estaba desplazada 2 días / mal alineada
+  // con el calendario de exámenes real). Se aplican siempre, sean cuales
+  // sean los datos ya guardados en localStorage, así no hace falta borrar nada.
+  var DATE_FIXES = {
+    "pp-sesion-01":"2026-10-15","pp-sesion-02":"2026-10-22","pp-sesion-03":"2026-10-29",
+    "pp-sesion-04":"2026-11-05","pp-sesion-05":"2026-11-12","pp-sesion-06":"2026-11-19",
+    "pp-sesion-07":"2026-11-26","pp-sesion-08":"2026-12-03","pp-sesion-09":"2026-12-10",
+    "pp-sesion-10":"2026-12-17","pp-sesion-11":"2027-01-07","pp-sesion-12":"2027-01-08",
+    "pp-sesion-13":"2027-01-14",
+    "pp-evidencia-1":"2026-11-18","pp-evidencia-2":"2026-11-29","pp-evidencia-3":"2027-01-13",
+    "pp-evidencia-4":"2027-01-25",
+    "pp-portafolio-1c":"2027-01-12","pp-examen-1c":"2027-02-03",
+    "pp-portafolio-2c":"2027-06-06","pp-examen-2c":"2027-06-09"
+  };
+  function applyDateFixes(){
+    var changed = false;
+    events.forEach(function(e){
+      if(DATE_FIXES.hasOwnProperty(e.id) && e.date !== DATE_FIXES[e.id]){
+        e.date = DATE_FIXES[e.id];
+        changed = true;
+      }
+    });
+    return changed;
+  }
+
+  function loadEvents(){
+    try{
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        events = JSON.parse(raw);
+      } else {
+        events = SEED_EVENTS.slice();
+        saveEvents();
+      }
+    }catch(e){ events = SEED_EVENTS.slice(); }
+    if(applyDateFixes()) saveEvents();
+  }
+  function saveEvents(){
+    try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }catch(e){}
+  }
+  function genId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function isoDate(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
+  function todayIso(){ return isoDate(today.getFullYear(), today.getMonth(), today.getDate()); }
+
+  function eventsForDay(iso){
+    return events.filter(function(e){ return e.date === iso; })
+      .sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0); });
+  }
+
+  function distinctSubjects(){
+    var seen = {}; var list = [];
+    events.forEach(function(e){
+      var s = normSubject(e.subject);
+      if(!seen[s]){ seen[s]=true; list.push(s); }
+    });
+    list.sort();
+    return list;
+  }
+
+  function renderLegend(){
+    var row = document.getElementById('legendRow');
+    row.innerHTML = '';
+    var subjects = distinctSubjects();
+    if(!subjects.length){
+      row.className = 'legend empty';
+      row.textContent = 'Agrega una fecha para ver sus asignaturas aquí.';
+      return;
+    }
+    row.className = 'legend';
+    subjects.forEach(function(s){
+      var item = document.createElement('span');
+      item.className = 'item';
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = subjectColor(s);
+      item.appendChild(dot);
+      var label = document.createElement('span');
+      label.textContent = s;
+      item.appendChild(label);
+      row.appendChild(item);
+    });
+  }
+
+  function renderSubjectOptions(){
+    var dl = document.getElementById('subjectOptions');
+    dl.innerHTML = '';
+    distinctSubjects().forEach(function(s){
+      var opt = document.createElement('option');
+      opt.value = s;
+      dl.appendChild(opt);
+    });
+  }
+
+  function renderMonthLabel(){
+    document.getElementById('monthLabel').textContent = MESES[viewMonth] + ' ' + viewYear;
+  }
+
+  function buildChip(e){
+    var subj = normSubject(e.subject);
+    var chip = document.createElement('div');
+    chip.className = 'chip' + (e.done ? ' done' : '');
+    chip.style.background = subjectTint(subj, 0.22);
+    chip.style.color = subjectColor(subj);
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!e.done;
+    cb.setAttribute('aria-label', 'Marcar completado');
+    cb.addEventListener('click', function(ev){ ev.stopPropagation(); });
+    cb.addEventListener('change', function(){ toggleDone(e.id, cb.checked); });
+    chip.appendChild(cb);
+
+    var prefix = document.createElement('span');
+    prefix.className = 'chip-prefix';
+    prefix.textContent = subj.toUpperCase();
+    chip.appendChild(prefix);
+
+    var text = document.createElement('span');
+    text.className = 'chip-text';
+    text.textContent = e.title;
+    chip.appendChild(text);
+    return chip;
+  }
+
+  function renderGrid(){
+    var grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+    var firstOfMonth = new Date(viewYear, viewMonth, 1);
+    var startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday=0
+    var gridStart = new Date(viewYear, viewMonth, 1 - startOffset);
+
+    for(var i=0;i<42;i++){
+      var cellDate = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate()+i);
+      var iso = isoDate(cellDate.getFullYear(), cellDate.getMonth(), cellDate.getDate());
+      var outside = cellDate.getMonth() !== viewMonth;
+      var dayEvents = eventsForDay(iso);
+      var hasTask = dayEvents.some(function(e){ return e.type === 'tarea'; });
+      var hasExam = dayEvents.some(function(e){ return e.type === 'examen'; });
+      var cell = document.createElement('div');
+      cell.className = 'day' + (outside?' outside':'') + (iso===todayIso()?' today':'') + (iso===selectedDate?' selected':'') + (hasTask?' has-task':'') + (hasExam?' has-exam':'');
+      cell.dataset.date = iso;
+
+      var num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = cellDate.getDate();
+      cell.appendChild(num);
+
+      if(dayEvents.length){
+        var chipsWrap = document.createElement('div');
+        chipsWrap.className = 'chips';
+        dayEvents.slice(0, MAX_CHIPS).forEach(function(e){ chipsWrap.appendChild(buildChip(e)); });
+        if(dayEvents.length > MAX_CHIPS){
+          var more = document.createElement('span');
+          more.className = 'more';
+          more.textContent = '+' + (dayEvents.length - MAX_CHIPS) + ' más';
+          chipsWrap.appendChild(more);
+        }
+        cell.appendChild(chipsWrap);
+      }
+
+      cell.addEventListener('click', function(){
+        var d = this.dataset.date;
+        selectedDate = (selectedDate === d) ? null : d;
+        renderGrid();
+        renderDayDetail();
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function fmtDateLong(iso){
+    var parts = iso.split('-');
+    var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+    return d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + parts[0];
+  }
+
+  function fmtTimeRange(e){
+    if(e.time && e.timeEnd) return e.time + '–' + e.timeEnd;
+    if(e.time) return e.time;
+    return '';
+  }
+
+  function renderDayDetail(){
+    var box = document.getElementById('dayDetail');
+    if(!selectedDate){ box.hidden = true; return; }
+    box.hidden = false;
+    document.getElementById('dayDetailTitle').textContent = fmtDateLong(selectedDate);
+    var body = document.getElementById('dayDetailBody');
+    var dayEvents = eventsForDay(selectedDate);
+    body.innerHTML = '';
+    if(!dayEvents.length){
+      var p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = 'Sin fechas este día.';
+      body.appendChild(p);
+      return;
+    }
+    dayEvents.forEach(function(e){ body.appendChild(buildEventRow(e, false)); });
+  }
+
+  function buildEventRow(e, showDate){
+    var row = document.createElement('div');
+    row.className = 'event-row' + (e.done ? ' done' : '');
+    var subj = normSubject(e.subject);
+
+    if(showDate){
+      var db = document.createElement('div');
+      db.className = 'datebox';
+      var d = new Date(+e.date.split('-')[0], +e.date.split('-')[1]-1, +e.date.split('-')[2]);
+      db.textContent = pad(d.getDate()) + ' ' + MESES[d.getMonth()].slice(0,3).toUpperCase();
+      row.appendChild(db);
+    }
+
+    var bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.background = subjectColor(subj);
+    row.appendChild(bar);
+
+    var taskCb = document.createElement('input');
+    taskCb.type = 'checkbox';
+    taskCb.className = 'task-check';
+    taskCb.checked = !!e.done;
+    taskCb.setAttribute('aria-label', 'Marcar completado');
+    taskCb.addEventListener('change', function(){
+      toggleDone(e.id, taskCb.checked);
+      row.classList.toggle('done', taskCb.checked);
+    });
+    row.appendChild(taskCb);
+
+    var bodyEl = document.createElement('div');
+    bodyEl.className = 'body';
+
+    var titleLine = document.createElement('div');
+    titleLine.className = 'title-line';
+
+    var prefix = document.createElement('span');
+    prefix.className = 'subj-prefix';
+    prefix.textContent = subj.toUpperCase();
+    prefix.style.color = subjectColor(subj);
+    titleLine.appendChild(prefix);
+
+    var title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = e.title;
+    titleLine.appendChild(title);
+
+    bodyEl.appendChild(titleLine);
+
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var metaBits = [TYPE_LABEL[e.type] || 'Otro'];
+    var tr = fmtTimeRange(e);
+    if(tr) metaBits.push(tr);
+    meta.textContent = metaBits.join(' · ');
+    bodyEl.appendChild(meta);
+
+    if(e.notes){
+      var notes = document.createElement('div');
+      notes.className = 'notes';
+      notes.textContent = e.notes;
+      bodyEl.appendChild(notes);
+    }
+    row.appendChild(bodyEl);
+
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Eliminar');
+    del.textContent = '×';
+    del.addEventListener('click', function(){ deleteEvent(e.id); });
+    row.appendChild(del);
+
+    return row;
+  }
+
+  function renderUpcoming(){
+    var card = document.getElementById('upcomingCard');
+    var iso = todayIso();
+    var upcoming = events.filter(function(e){ return e.date >= iso; })
+      .sort(function(a,b){
+        if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+        return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0);
+      })
+      .slice(0, 40);
+    card.innerHTML = '';
+    if(!upcoming.length){
+      var es = document.createElement('div');
+      es.className = 'empty-state';
+      es.innerHTML = '<p class="display">Todavía no hay fechas</p><p>Agrega tu próximo examen, tarea o clase con el botón de abajo.</p>';
+      card.appendChild(es);
+      return;
+    }
+    upcoming.forEach(function(e){ card.appendChild(buildEventRow(e, true)); });
+  }
+
+  function renderAll(){
+    renderMonthLabel();
+    renderGrid();
+    renderLegend();
+    renderSubjectOptions();
+    renderDayDetail();
+    renderUpcoming();
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    viewMonth--; if(viewMonth<0){viewMonth=11; viewYear--;}
+    renderMonthLabel(); renderGrid();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    viewMonth++; if(viewMonth>11){viewMonth=0; viewYear++;}
+    renderMonthLabel(); renderGrid();
+  });
+  document.getElementById('todayBtn').addEventListener('click', function(){
+    viewYear = today.getFullYear(); viewMonth = today.getMonth();
+    renderMonthLabel(); renderGrid();
+  });
+
+  var THEME_KEY = 'mi-semestre-theme-v1';
+  var themeToggle = document.getElementById('themeToggle');
+  function applyThemeIcon(){
+    themeToggle.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '🌙' : '☀';
+  }
+  applyThemeIcon();
+  themeToggle.addEventListener('click', function(){
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ window.localStorage.setItem(THEME_KEY, next); }catch(e){}
+    applyThemeIcon();
+    renderAll();
+  });
+
+  var addToggle = document.getElementById('addToggle');
+  var addForm = document.getElementById('addForm');
+  addToggle.addEventListener('click', function(){
+    addForm.hidden = false;
+    addToggle.hidden = true;
+    document.getElementById('f-date').value = selectedDate || todayIso();
+  });
+  document.getElementById('cancelAdd').addEventListener('click', function(){
+    addForm.hidden = true;
+    addToggle.hidden = false;
+    addForm.reset();
+    document.getElementById('formStatus').textContent = '';
+  });
+
+  addForm.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var statusEl = document.getElementById('formStatus');
+    var data = {
+      id: genId(),
+      date: document.getElementById('f-date').value,
+      time: document.getElementById('f-time').value || '',
+      timeEnd: document.getElementById('f-time-end').value || '',
+      title: document.getElementById('f-title').value.trim(),
+      type: document.getElementById('f-type').value,
+      subject: document.getElementById('f-subject').value.trim(),
+      notes: document.getElementById('f-notes').value.trim(),
+      done: false
+    };
+    if(!data.date || !data.title || !data.subject){ return; }
+    events.push(data);
+    saveEvents();
+    statusEl.textContent = '';
+    statusEl.className = 'status-msg';
+    addForm.reset();
+    addForm.hidden = true;
+    addToggle.hidden = false;
+    renderAll();
+  });
+
+  function toggleDone(id, value){
+    var e = events.find(function(ev){ return ev.id === id; });
+    if(!e) return;
+    e.done = value;
+    saveEvents();
+    renderAll();
+  }
+
+  function deleteEvent(id){
+    events = events.filter(function(e){ return e.id !== id; });
+    saveEvents();
+    renderAll();
+  }
+
+  loadEvents();
+  renderAll();
+
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
+  }
+  new MutationObserver(renderAll).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+})();
+</script>
+
+</body></html>
