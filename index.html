@@ -337,7 +337,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     <div class="col">
       <section class="list-section">
         <h2>Entregas</h2>
-        <div class="card" id="entregasCard">
+        <div id="entregasCard">
           <div class="empty-state"><p class="display">Cargando…</p></div>
         </div>
       </section>
@@ -948,13 +948,17 @@ form.add-form textarea{resize:vertical;min-height:50px}
   }
 
   function renderEntregas(){
-    renderFilteredList('entregasCard', 'tarea', 'No hay entregas pendientes.');
+    renderByConvocatoria('entregasCard', 'tarea', 'No hay entregas pendientes.');
   }
 
   function renderExamenes(){
-    var card = document.getElementById('examenesCard');
+    renderByConvocatoria('examenesCard', 'examen', 'No hay exámenes programados.');
+  }
+
+  function renderByConvocatoria(cardId, type, emptyText){
+    var card = document.getElementById(cardId);
     var iso = todayIso();
-    var list = events.filter(function(e){ return e.type === 'examen' && e.date >= iso; })
+    var list = events.filter(function(e){ return e.type === type && e.date >= iso; })
       .sort(function(a,b){
         if(a.date !== b.date) return a.date < b.date ? -1 : 1;
         return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0);
@@ -963,7 +967,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     if(!list.length){
       var es = document.createElement('div');
       es.className = 'empty-state';
-      es.innerHTML = '<p class="display">Sin fechas</p><p>No hay exámenes programados.</p>';
+      es.innerHTML = '<p class="display">Sin fechas</p><p>' + emptyText + '</p>';
       var emptyCard = document.createElement('div');
       emptyCard.className = 'card';
       emptyCard.appendChild(es);
