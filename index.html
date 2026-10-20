@@ -366,6 +366,11 @@ form.add-form textarea{resize:vertical;min-height:50px}
   // sin backend de Claude, así que los eventos viven en este navegador/equipo.
   // La primera vez se precargan con el cronograma completo del semestre.
   var STORAGE_KEY = 'mi-semestre-events-v1';
+  // IDs de eventos del seed que el usuario borró explícitamente: así,
+  // cuando se añaden eventos nuevos al seed (p.ej. una nueva entrega), se
+  // mezclan con lo que ya hay guardado sin resucitar lo que se borró a propósito.
+  var DELETED_KEY = 'mi-semestre-deleted-v1';
+  var deletedIds = [];
 
   var SEED_EVENTS = [
     {"id":"calc-sesion-01","date":"2026-10-16","time":"19:00","timeEnd":"20:00","title":"Sesión teórica: funciones de variable real","type":"clase","subject":"Cálculo","notes":"","done":true},
@@ -549,17 +554,49 @@ form.add-form textarea{resize:vertical;min-height:50px}
     return changed;
   }
 
+  function loadDeleted(){
+    try{
+      var raw = window.localStorage.getItem(DELETED_KEY);
+      deletedIds = raw ? JSON.parse(raw) : [];
+    }catch(e){ deletedIds = []; }
+  }
+  function saveDeleted(){
+    try{ window.localStorage.setItem(DELETED_KEY, JSON.stringify(deletedIds)); }catch(e){}
+  }
+
+  // Añade al array en memoria cualquier evento del seed que todavía no exista
+  // (por id) y que el usuario no haya borrado antes. Así, cuando se agregan
+  // eventos nuevos al código (SEED_EVENTS), aparecen también para quienes ya
+  // tenían datos guardados en este navegador, sin tocar lo que el usuario
+  // añadió, editó (p.ej. marcar como hecho) o borró.
+  function mergeSeedEvents(){
+    var existingIds = {};
+    events.forEach(function(e){ existingIds[e.id] = true; });
+    var changed = false;
+    SEED_EVENTS.forEach(function(se){
+      if(!existingIds[se.id] && deletedIds.indexOf(se.id) === -1){
+        events.push(Object.assign({}, se));
+        changed = true;
+      }
+    });
+    return changed;
+  }
+
   function loadEvents(){
+    loadDeleted();
+    var needsSave = false;
     try{
       var raw = window.localStorage.getItem(STORAGE_KEY);
       if(raw){
         events = JSON.parse(raw);
       } else {
         events = SEED_EVENTS.slice();
-        saveEvents();
+        needsSave = true;
       }
-    }catch(e){ events = SEED_EVENTS.slice(); }
-    if(applyDateFixes()) saveEvents();
+    }catch(e){ events = SEED_EVENTS.slice(); needsSave = true; }
+    if(mergeSeedEvents()) needsSave = true;
+    if(applyDateFixes()) needsSave = true;
+    if(needsSave) saveEvents();
   }
   function saveEvents(){
     try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }catch(e){}
@@ -906,6 +943,10 @@ form.add-form textarea{resize:vertical;min-height:50px}
 
   function deleteEvent(id){
     events = events.filter(function(e){ return e.id !== id; });
+    if(deletedIds.indexOf(id) === -1){
+      deletedIds.push(id);
+      saveDeleted();
+    }
     saveEvents();
     renderAll();
   }
