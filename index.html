@@ -79,6 +79,15 @@ header.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px}
 
+.tabbar{display:flex;gap:8px;margin-bottom:20px}
+.tab-btn{
+  flex:1;padding:11px 10px;border-radius:10px;border:1px solid var(--line);
+  background:var(--surface);color:var(--muted);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;
+  cursor:pointer;text-align:center;
+}
+.tab-btn:hover{border-color:var(--accent);color:var(--fg)}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
 .cal-section{margin-bottom:20px}
 
 .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;margin-bottom:12px}
@@ -213,42 +222,51 @@ form.add-form textarea{resize:vertical;min-height:50px}
     </header>
   </div>
 
-  <div class="cal-section">
-    <div class="card nav">
-      <div class="btns">
-        <button type="button" id="prevMonth" aria-label="Mes anterior">‹</button>
-        <button type="button" id="todayBtn" class="today-btn">Hoy</button>
-      </div>
-      <span class="month-label" id="monthLabel">—</span>
-      <div class="btns">
-        <button type="button" id="themeToggle" aria-label="Cambiar tema">☀</button>
-        <button type="button" id="nextMonth" aria-label="Mes siguiente">›</button>
-      </div>
-    </div>
-
-    <div class="card grid-card">
-      <div class="dow" id="dowRow"></div>
-      <div class="days" id="daysGrid"></div>
-      <div class="legend" id="legendRow"></div>
-    </div>
+  <div class="col">
+    <nav class="tabbar" id="tabBar">
+      <button type="button" class="tab-btn" data-view="calendario">Calendario</button>
+      <button type="button" class="tab-btn" data-view="examenes">Exámenes</button>
+      <button type="button" class="tab-btn" data-view="entregas">Entregas</button>
+    </nav>
   </div>
 
-  <div class="col">
-    <div class="card day-detail" id="dayDetail" hidden>
-      <h3 id="dayDetailTitle">—</h3>
-      <div id="dayDetailBody"></div>
+  <div id="view-calendario">
+    <div class="cal-section">
+      <div class="card nav">
+        <div class="btns">
+          <button type="button" id="prevMonth" aria-label="Mes anterior">‹</button>
+          <button type="button" id="todayBtn" class="today-btn">Hoy</button>
+        </div>
+        <span class="month-label" id="monthLabel">—</span>
+        <div class="btns">
+          <button type="button" id="themeToggle" aria-label="Cambiar tema">☀</button>
+          <button type="button" id="nextMonth" aria-label="Mes siguiente">›</button>
+        </div>
+      </div>
+
+      <div class="card grid-card">
+        <div class="dow" id="dowRow"></div>
+        <div class="days" id="daysGrid"></div>
+        <div class="legend" id="legendRow"></div>
+      </div>
     </div>
 
-    <section class="list-section">
-      <h2>Próximas fechas</h2>
-      <div class="card" id="upcomingCard">
-        <div class="empty-state"><p class="display">Cargando…</p></div>
+    <div class="col">
+      <div class="card day-detail" id="dayDetail" hidden>
+        <h3 id="dayDetailTitle">—</h3>
+        <div id="dayDetailBody"></div>
       </div>
-    </section>
 
-    <button type="button" class="add-toggle" id="addToggle">+ Agregar fecha</button>
+      <section class="list-section">
+        <h2>Próximas fechas</h2>
+        <div class="card" id="upcomingCard">
+          <div class="empty-state"><p class="display">Cargando…</p></div>
+        </div>
+      </section>
 
-    <form class="card add-form" id="addForm" hidden>
+      <button type="button" class="add-toggle" id="addToggle">+ Agregar fecha</button>
+
+      <form class="card add-form" id="addForm" hidden>
       <div class="row">
         <div class="field">
           <label for="f-date">Fecha</label>
@@ -294,6 +312,29 @@ form.add-form textarea{resize:vertical;min-height:50px}
         <button type="submit" class="primary">Guardar</button>
       </div>
     </form>
+    </div>
+  </div>
+
+  <div id="view-examenes" hidden>
+    <div class="col">
+      <section class="list-section">
+        <h2>Exámenes</h2>
+        <div class="card" id="examenesCard">
+          <div class="empty-state"><p class="display">Cargando…</p></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="view-entregas" hidden>
+    <div class="col">
+      <section class="list-section">
+        <h2>Entregas</h2>
+        <div class="card" id="entregasCard">
+          <div class="empty-state"><p class="display">Cargando…</p></div>
+        </div>
+      </section>
+    </div>
   </div>
 
 </div>
@@ -858,6 +899,33 @@ form.add-form textarea{resize:vertical;min-height:50px}
     upcoming.forEach(function(e){ card.appendChild(buildEventRow(e, true)); });
   }
 
+  function renderFilteredList(cardId, type, emptyText){
+    var card = document.getElementById(cardId);
+    var iso = todayIso();
+    var list = events.filter(function(e){ return e.type === type && e.date >= iso; })
+      .sort(function(a,b){
+        if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+        return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0);
+      });
+    card.innerHTML = '';
+    if(!list.length){
+      var es = document.createElement('div');
+      es.className = 'empty-state';
+      es.innerHTML = '<p class="display">Sin fechas</p><p>' + emptyText + '</p>';
+      card.appendChild(es);
+      return;
+    }
+    list.forEach(function(e){ card.appendChild(buildEventRow(e, true)); });
+  }
+
+  function renderEntregas(){
+    renderFilteredList('entregasCard', 'tarea', 'No hay entregas pendientes.');
+  }
+
+  function renderExamenes(){
+    renderFilteredList('examenesCard', 'examen', 'No hay exámenes programados.');
+  }
+
   function renderAll(){
     renderMonthLabel();
     renderGrid();
@@ -865,6 +933,8 @@ form.add-form textarea{resize:vertical;min-height:50px}
     renderSubjectOptions();
     renderDayDetail();
     renderUpcoming();
+    renderEntregas();
+    renderExamenes();
   }
 
   document.getElementById('prevMonth').addEventListener('click', function(){
@@ -950,6 +1020,25 @@ form.add-form textarea{resize:vertical;min-height:50px}
     saveEvents();
     renderAll();
   }
+
+  var VIEW_KEY = 'mi-semestre-view-v1';
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  function setView(view){
+    document.getElementById('view-calendario').hidden = view !== 'calendario';
+    document.getElementById('view-examenes').hidden = view !== 'examenes';
+    document.getElementById('view-entregas').hidden = view !== 'entregas';
+    tabBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.view === view); });
+    try{ window.localStorage.setItem(VIEW_KEY, view); }catch(e){}
+  }
+  tabBtns.forEach(function(b){
+    b.addEventListener('click', function(){ setView(b.dataset.view); });
+  });
+  var savedView = 'calendario';
+  try{
+    var v = window.localStorage.getItem(VIEW_KEY);
+    if(v === 'calendario' || v === 'examenes' || v === 'entregas') savedView = v;
+  }catch(e){}
+  setView(savedView);
 
   loadEvents();
   renderAll();
