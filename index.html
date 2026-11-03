@@ -608,14 +608,29 @@ form.add-form textarea{resize:vertical;min-height:50px}
     "pp-sesion-07":"2026-11-26","pp-sesion-08":"2026-12-03","pp-sesion-09":"2026-12-10",
     "pp-sesion-10":"2026-12-17","pp-sesion-11":"2027-01-07","pp-sesion-12":"2027-01-08",
     "pp-sesion-13":"2027-01-14",
-    "pp-evidencia-1":"2026-11-18","pp-evidencia-2":"2026-11-29","pp-evidencia-3":"2027-01-13",
+    "pp-evidencia-1":"2026-12-01","pp-evidencia-2":"2026-11-29","pp-evidencia-3":"2027-01-13",
     "pp-evidencia-4":"2027-01-25",
     "pp-portafolio-1c":"2027-01-12","pp-examen-1c":"2027-02-03",
     "pp-portafolio-2c":"2027-06-06","pp-examen-2c":"2027-06-09"
   };
+  // Correcciones completas (fecha, hora, título, notas) a partir de lo que
+  // figura en Campus. También se aplican siempre sobre los datos guardados.
+  var EVENT_FIXES = {
+    "fc-evidencia-1":{"date":"2026-11-15","time":"23:59","title":"Actividad Práctica 1: simplificación de funciones lógicas","notes":"Evaluación continua · 10% del portafolio. Individual, 1 intento. Entrega en Campus hasta el 15/11/2026 23:59."},
+    "pp-evidencia-1":{"date":"2026-12-01","time":"23:59","title":"Actividad 1: vídeo sobre elementos POO","notes":"Evaluación continua · 5% del portafolio. Vídeo de 3-5 min sobre los elementos POO vistos en clase. 1 intento. Entrega en Campus hasta el 1/12/2026 23:59."}
+  };
   function applyDateFixes(){
     var changed = false;
     events.forEach(function(e){
+      var fx = EVENT_FIXES[e.id];
+      if(fx){
+        Object.keys(fx).forEach(function(k){
+          if(e[k] !== fx[k]){ e[k] = fx[k]; changed = true; }
+        });
+      }
+    });
+    events.forEach(function(e){
+      if(EVENT_FIXES.hasOwnProperty(e.id)) return;
       if(DATE_FIXES.hasOwnProperty(e.id) && e.date !== DATE_FIXES[e.id]){
         e.date = DATE_FIXES[e.id];
         changed = true;
