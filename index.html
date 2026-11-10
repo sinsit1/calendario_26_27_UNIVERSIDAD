@@ -773,8 +773,9 @@ form.add-form textarea{resize:vertical;min-height:50px}
     clearTimeout(syncTimer);
     syncTimer = setTimeout(syncChecks, 1200);
   }
-  document.getElementById('syncBtn').addEventListener('click', function(){
+  document.getElementById('syncBtn').addEventListener('click', function(ev){
     var cur = getToken();
+    if(cur && !ev.shiftKey){ syncChecks(); return; }
     var t = window.prompt('Token de GitHub (fine-grained, solo este repo, Contents: read/write).\nDéjalo vacío para quitar el token de este PC.' + (cur ? '\n(Ya hay uno guardado.)' : ''), '');
     if(t === null) return;
     t = t.trim();
@@ -784,6 +785,10 @@ form.add-form textarea{resize:vertical;min-height:50px}
     }catch(e){}
     syncChecks();
   });
+  (function(){
+    var btn = document.getElementById('syncBtn');
+    if(btn && getToken()){ btn.textContent = 'Sincronizar ahora'; btn.title = 'Ya hay un token guardado. Mayúsculas + clic para cambiarlo o quitarlo.'; }
+  })();
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) syncChecks(); });
   // ---------------------------------------------------------------------
 
