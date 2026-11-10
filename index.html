@@ -217,6 +217,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
 .form-actions button.primary:hover{opacity:.9}
 .status-msg{font-size:12px;color:var(--muted);min-height:14px}
 .status-msg.err{color:var(--accent)}
+.sync-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer;margin-top:6px;align-self:flex-start}
 </style>
 
 <div class="page">
@@ -226,6 +227,8 @@ form.add-form textarea{resize:vertical;min-height:50px}
       <span class="eyebrow">Universidad</span>
       <h1>Mi Semestre</h1>
       <span class="sub">Exámenes, tareas y clases, por asignatura. Nada de trabajo aquí.</span>
+      <span class="status-msg" id="syncStatus"></span>
+      <button type="button" class="sync-btn" id="syncBtn">Sincronizar checks</button>
     </header>
   </div>
 
@@ -686,6 +689,104 @@ form.add-form textarea{resize:vertical;min-height:50px}
   function saveEvents(){
     try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }catch(e){}
   }
+  // ---- Sincronización de checks entre PCs ----------------------------
+  // Los checks (hecho / no hecho) se guardan también en checks.json dentro del
+  // repo de GitHub. Al abrir la página se leen de ahí (el repo es público, no
+  // hace falta token). Para ESCRIBIR hace falta un token de GitHub (fine-grained,
+  // solo este repo, permiso Contents: read/write) que se pega una vez en cada
+  // PC con el botón "Sincronizar checks" y se queda en su localStorage.
+  // Cada check lleva marca de tiempo; en un conflicto gana el cambio más reciente.
+  var SYNC_API = 'https://api.github.com/repos/sinsit1/calendario_26_27_UNIVERSIDAD/contents/checks.json';
+  var TOKEN_KEY = 'mi-semestre-sync-token-v1';
+  var syncTimer = null, syncBusy = false, syncAgain = false;
+  function getToken(){ try{ return window.localStorage.getItem(TOKEN_KEY) || ''; }catch(e){ return ''; } }
+  function setSyncMsg(t, err){
+    var el = document.getElementById('syncStatus');
+    if(!el) return;
+    el.textContent = t || '';
+    el.className = 'status-msg' + (err ? ' err' : '');
+  }
+  function b64d(s){ return decodeURIComponent(escape(atob(s.replace(/\n/g,'')))); }
+  function b64e(s){ return btoa(unescape(encodeURIComponent(s))); }
+  function localChecks(){
+    var o = {};
+    events.forEach(function(e){
+      if(e.doneAt || e.done) o[e.id] = {d: !!e.done, t: e.doneAt || 1};
+    });
+    return o;
+  }
+  function fetchRemote(){
+    var h = {'Accept':'application/vnd.github+json'};
+    var tk = getToken();
+    if(tk) h['Authorization'] = 'Bearer ' + tk;
+    return fetch(SYNC_API + '?ref=main&_=' + Date.now(), {headers:h, cache:'no-store'}).then(function(r){
+      if(r.status === 404) return {sha:null, data:{}};
+      if(!r.ok) throw new Error('GitHub ' + r.status);
+      return r.json().then(function(j){
+        var d = {};
+        try{ d = JSON.parse(b64d(j.content)) || {}; }catch(e){}
+        return {sha:j.sha, data:d};
+      });
+    });
+  }
+  function applyRemote(remote){
+    var changed = false;
+    Object.keys(remote).forEach(function(id){
+      var e = events.find(function(ev){ return ev.id === id; });
+      var rv = remote[id];
+      if(!e || !rv || !(rv.t > (e.doneAt || 0))) return;
+      if(e.done !== !!rv.d) changed = true;
+      e.done = !!rv.d;
+      e.doneAt = rv.t;
+    });
+    return changed;
+  }
+  function syncChecks(){
+    if(syncBusy){ syncAgain = true; return Promise.resolve(); }
+    syncBusy = true;
+    setSyncMsg('Sincronizando…');
+    return fetchRemote().then(function(r){
+      var changed = applyRemote(r.data);
+      if(changed){ saveEvents(); renderAll(); }
+      var merged = Object.assign({}, r.data), needPush = false, loc = localChecks();
+      Object.keys(loc).forEach(function(id){
+        if(!merged[id] || loc[id].t > merged[id].t){ merged[id] = loc[id]; needPush = true; }
+      });
+      if(!needPush){ setSyncMsg('Checks sincronizados'); return; }
+      if(!getToken()){ setSyncMsg('Cambios solo en este PC: pulsa «Sincronizar checks» y pega el token', true); return; }
+      var body = {message:'Actualizar checks', content:b64e(JSON.stringify(merged, null, 1) + '\n'), branch:'main'};
+      if(r.sha) body.sha = r.sha;
+      return fetch(SYNC_API, {method:'PUT', headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer ' + getToken()}, body:JSON.stringify(body)})
+        .then(function(w){
+          if(w.status === 409 || w.status === 422){ syncAgain = true; return; }
+          if(!w.ok) throw new Error('GitHub ' + w.status + (w.status === 401 || w.status === 403 || w.status === 404 ? ' (revisa el token)' : ''));
+          setSyncMsg('Checks guardados en GitHub');
+        });
+    }).catch(function(err){
+      setSyncMsg('Sin sincronizar: ' + err.message, true);
+    }).then(function(){
+      syncBusy = false;
+      if(syncAgain){ syncAgain = false; return syncChecks(); }
+    });
+  }
+  function scheduleSync(){
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncChecks, 1200);
+  }
+  document.getElementById('syncBtn').addEventListener('click', function(){
+    var cur = getToken();
+    var t = window.prompt('Token de GitHub (fine-grained, solo este repo, Contents: read/write).\nDéjalo vacío para quitar el token de este PC.' + (cur ? '\n(Ya hay uno guardado.)' : ''), '');
+    if(t === null) return;
+    t = t.trim();
+    try{
+      if(t) window.localStorage.setItem(TOKEN_KEY, t);
+      else if(cur) window.localStorage.removeItem(TOKEN_KEY);
+    }catch(e){}
+    syncChecks();
+  });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) syncChecks(); });
+  // ---------------------------------------------------------------------
+
   function genId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
   function pad(n){ return n<10 ? '0'+n : ''+n; }
@@ -1090,8 +1191,10 @@ form.add-form textarea{resize:vertical;min-height:50px}
     var e = events.find(function(ev){ return ev.id === id; });
     if(!e) return;
     e.done = value;
+    e.doneAt = Date.now();
     saveEvents();
     renderAll();
+    scheduleSync();
   }
 
   function deleteEvent(id){
@@ -1125,6 +1228,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
 
   loadEvents();
   renderAll();
+  syncChecks();
 
   if(window.matchMedia){
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
