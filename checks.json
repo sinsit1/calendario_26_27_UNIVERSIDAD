@@ -1,1 +1,142 @@
-{}
+{
+ "calc-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "calc-tutoria-inicial": {
+  "d": true,
+  "t": 1
+ },
+ "pp-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "ec-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "ec-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "fc-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "calc-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "eda-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "taf-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "taf-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "calc-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "eda-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "pp-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "fc-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "eda-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "taf-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "calc-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "fc-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "pp-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "fc-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "calc-sesion-05": {
+  "d": true,
+  "t": 1
+ },
+ "eda-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "taf-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "taf-sesion-05": {
+  "d": true,
+  "t": 1
+ },
+ "eda-sesion-05": {
+  "d": true,
+  "t": 1
+ },
+ "fc-sesion-05": {
+  "d": true,
+  "t": 1
+ },
+ "pp-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "eda-evidencia-1": {
+  "d": true,
+  "t": 1
+ },
+ "ac-sesion-01": {
+  "d": true,
+  "t": 1
+ },
+ "ac-sesion-02": {
+  "d": true,
+  "t": 1
+ },
+ "ac-sesion-03": {
+  "d": true,
+  "t": 1
+ },
+ "ac-sesion-04": {
+  "d": true,
+  "t": 1
+ },
+ "ac-evidencia-1": {
+  "d": true,
+  "t": 1
+ },
+ "atp-jueves-01": {
+  "d": true,
+  "t": 1
+ },
+ "atp-jueves-02": {
+  "d": true,
+  "t": 1
+ }
+}
