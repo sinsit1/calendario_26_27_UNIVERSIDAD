@@ -1069,17 +1069,17 @@ form.add-form textarea{resize:vertical;min-height:50px}
   }
 
   function renderEntregas(){
-    renderByConvocatoria('entregasCard', 'tarea', 'No hay entregas pendientes.');
+    renderByConvocatoria('entregasCard', 'tarea', 'No hay entregas pendientes.', true);
   }
 
   function renderExamenes(){
     renderByConvocatoria('examenesCard', 'examen', 'No hay exámenes programados.');
   }
 
-  function renderByConvocatoria(cardId, type, emptyText){
+  function renderByConvocatoria(cardId, type, emptyText, keepPast){
     var card = document.getElementById(cardId);
     var iso = todayIso();
-    var list = events.filter(function(e){ return e.type === type && e.date >= iso; })
+    var list = events.filter(function(e){ return e.type === type && (keepPast || e.date >= iso); })
       .sort(function(a,b){
         if(a.date !== b.date) return a.date < b.date ? -1 : 1;
         return (a.time||'') < (b.time||'') ? -1 : ((a.time||'') > (b.time||'') ? 1 : 0);
