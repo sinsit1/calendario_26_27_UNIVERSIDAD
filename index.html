@@ -152,6 +152,8 @@ header.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
 .chip .chip-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .chip.done .chip-text{text-decoration:line-through;opacity:.6}
 .chip input[type="checkbox"]{width:14px;height:14px;margin:0;flex-shrink:0;accent-color:var(--fg);cursor:pointer;background:var(--surface)}
+.chip input.avail-cb{accent-color:#2a7d4f}
+.chip.pending-avail .chip-text{opacity:.85}
 .day .more{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px}
 
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
@@ -171,6 +173,10 @@ section.list-section h2{font-size:15px;font-weight:600;letter-spacing:.02em;marg
 .event-row .datebox{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);min-width:68px;padding-top:3px}
 .event-row .bar{width:5px;border-radius:3px;align-self:stretch;flex-shrink:0}
 .event-row .task-check{width:19px;height:19px;margin-top:3px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}
+.event-row .checks{display:flex;flex-direction:column;gap:6px;flex-shrink:0;margin-top:1px}
+.event-row .checks label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.event-row .checks .task-check{margin-top:0}
+.event-row .checks .avail-check{accent-color:#2a7d4f}
 .event-row .body{flex:1;min-width:0}
 .event-row .title-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;row-gap:2px}
 .subj-prefix{font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:13px}
@@ -625,8 +631,27 @@ form.add-form textarea{resize:vertical;min-height:50px}
     "fc-evidencia-1":{"date":"2026-11-15","time":"23:59","title":"Actividad Práctica 1: simplificación de funciones lógicas","notes":"Evaluación continua · 10% del portafolio. Individual, 1 intento. Entrega en Campus hasta el 15/11/2026 23:59."},
     "pp-evidencia-1":{"date":"2026-12-01","time":"23:59","title":"Actividad 1: vídeo sobre elementos POO","notes":"Evaluación continua · 5% del portafolio. Vídeo de 3-5 min sobre los elementos POO vistos en clase. 1 intento. Entrega en Campus hasta el 1/12/2026 23:59."}
   };
+  // Fechas reales publicadas en Campus (14/11/2026). Se añaden a EVENT_FIXES.
+  var CAMPUS_DATES = {
+    "eda-evidencia-1":{"date":"2026-11-18","time":"00:59"},
+    "ac-evidencia-1":{"date":"2026-11-09","time":"23:59"},
+    "ac-evidencia-2":{"date":"2026-11-23","time":"23:59"},
+    "taf-evidencia-1":{"date":"2026-11-25","time":"05:59"}
+  };
+  Object.keys(CAMPUS_DATES).forEach(function(id){ EVENT_FIXES[id] = CAMPUS_DATES[id]; });
+  // Tareas ya publicadas en Campus a 14/11/2026 → check «Disponible».
+  // Solo se aplica si ese check nunca se ha tocado (availAt vacío).
+  var AVAIL_SEED = ["fc-evidencia-1","eda-evidencia-1","ac-evidencia-1","ac-evidencia-2","taf-evidencia-1","pp-evidencia-1"];
+  // Corrección puntual de «Hecha» (más reciente que cualquier marca anterior).
+  // Cálculo no tiene ninguna actividad en Campus, así que no puede estar entregada.
+  var CHECK_FIXES = {"calc-actividad-1":{"done":false,"ts":1794652604625}};
   function applyDateFixes(){
     var changed = false;
+    events.forEach(function(e){
+      if(AVAIL_SEED.indexOf(e.id) !== -1 && !e.availAt){ e.avail = true; e.availAt = 1; changed = true; }
+      var cf = CHECK_FIXES[e.id];
+      if(cf && (e.doneAt || 0) < cf.ts){ e.done = cf.done; e.doneAt = cf.ts; changed = true; }
+    });
     events.forEach(function(e){
       var fx = EVENT_FIXES[e.id];
       if(fx){
@@ -714,7 +739,10 @@ form.add-form textarea{resize:vertical;min-height:50px}
   function localChecks(){
     var o = {};
     events.forEach(function(e){
-      if(e.doneAt || e.done) o[e.id] = {d: !!e.done, t: e.doneAt || 1};
+      var has = false, v = {};
+      if(e.doneAt || e.done){ v.d = !!e.done; v.t = e.doneAt || 1; has = true; }
+      if(e.availAt || e.avail){ v.a = !!e.avail; v.at = e.availAt || 1; has = true; }
+      if(has) o[e.id] = v;
     });
     return o;
   }
@@ -737,10 +765,17 @@ form.add-form textarea{resize:vertical;min-height:50px}
     Object.keys(remote).forEach(function(id){
       var e = events.find(function(ev){ return ev.id === id; });
       var rv = remote[id];
-      if(!e || !rv || !(rv.t > (e.doneAt || 0))) return;
-      if(e.done !== !!rv.d) changed = true;
-      e.done = !!rv.d;
-      e.doneAt = rv.t;
+      if(!e || !rv) return;
+      if(rv.t > (e.doneAt || 0)){
+        if(e.done !== !!rv.d) changed = true;
+        e.done = !!rv.d;
+        e.doneAt = rv.t;
+      }
+      if(rv.at > (e.availAt || 0)){
+        if(!!e.avail !== !!rv.a) changed = true;
+        e.avail = !!rv.a;
+        e.availAt = rv.at;
+      }
     });
     return changed;
   }
@@ -752,8 +787,12 @@ form.add-form textarea{resize:vertical;min-height:50px}
       var changed = applyRemote(r.data);
       if(changed){ saveEvents(); renderAll(); }
       var merged = Object.assign({}, r.data), needPush = false, loc = localChecks();
+      // Cada check (hecha: d/t, disponible: a/at) se fusiona por separado; gana el más reciente.
       Object.keys(loc).forEach(function(id){
-        if(!merged[id] || loc[id].t > merged[id].t){ merged[id] = loc[id]; needPush = true; }
+        var l = loc[id], m = merged[id] ? Object.assign({}, merged[id]) : {}, ch = false;
+        if(l.t !== undefined && !(m.t >= l.t)){ m.d = l.d; m.t = l.t; ch = true; }
+        if(l.at !== undefined && !(m.at >= l.at)){ m.a = l.a; m.at = l.at; ch = true; }
+        if(ch){ merged[id] = m; needPush = true; }
       });
       if(!needPush){ setSyncMsg('Checks sincronizados'); return; }
       if(!getToken()){ setSyncMsg('Cambios solo en este PC: pulsa «Sincronizar checks» y pega el token', true); return; }
@@ -860,10 +899,22 @@ form.add-form textarea{resize:vertical;min-height:50px}
     chip.className = 'chip' + (e.done ? ' done' : '');
     chip.style.background = subjectTint(subj, 0.22);
     chip.style.color = subjectColor(subj);
+    if(e.type === 'tarea'){
+      var acb = document.createElement('input');
+      acb.type = 'checkbox';
+      acb.className = 'avail-cb';
+      acb.checked = !!e.avail;
+      acb.title = 'Disponible en el campus';
+      acb.setAttribute('aria-label', 'Disponible');
+      acb.addEventListener('click', function(ev){ ev.stopPropagation(); });
+      acb.addEventListener('change', function(){ toggleAvail(e.id, acb.checked); });
+      chip.appendChild(acb);
+    }
     var cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = !!e.done;
-    cb.setAttribute('aria-label', 'Marcar completado');
+    cb.title = e.type === 'tarea' ? 'Hecha (entregada)' : 'Completado';
+    cb.setAttribute('aria-label', e.type === 'tarea' ? 'Hecha' : 'Marcar completado');
     cb.addEventListener('click', function(ev){ ev.stopPropagation(); });
     cb.addEventListener('change', function(){ toggleDone(e.id, cb.checked); });
     chip.appendChild(cb);
@@ -979,12 +1030,31 @@ form.add-form textarea{resize:vertical;min-height:50px}
     taskCb.type = 'checkbox';
     taskCb.className = 'task-check';
     taskCb.checked = !!e.done;
-    taskCb.setAttribute('aria-label', 'Marcar completado');
+    taskCb.setAttribute('aria-label', e.type === 'tarea' ? 'Hecha' : 'Marcar completado');
     taskCb.addEventListener('change', function(){
       toggleDone(e.id, taskCb.checked);
       row.classList.toggle('done', taskCb.checked);
     });
-    row.appendChild(taskCb);
+    if(e.type === 'tarea'){
+      var checks = document.createElement('div');
+      checks.className = 'checks';
+      var lbA = document.createElement('label');
+      var availCb = document.createElement('input');
+      availCb.type = 'checkbox';
+      availCb.className = 'task-check avail-check';
+      availCb.checked = !!e.avail;
+      availCb.addEventListener('change', function(){ toggleAvail(e.id, availCb.checked); });
+      lbA.appendChild(availCb);
+      lbA.appendChild(document.createTextNode('Disponible'));
+      var lbD = document.createElement('label');
+      lbD.appendChild(taskCb);
+      lbD.appendChild(document.createTextNode('Hecha'));
+      checks.appendChild(lbA);
+      checks.appendChild(lbD);
+      row.appendChild(checks);
+    } else {
+      row.appendChild(taskCb);
+    }
 
     var bodyEl = document.createElement('div');
     bodyEl.className = 'body';
@@ -1200,6 +1270,18 @@ form.add-form textarea{resize:vertical;min-height:50px}
     if(!e) return;
     e.done = value;
     e.doneAt = Date.now();
+    // Una tarea entregada ya estaba disponible.
+    if(value && e.type === 'tarea' && !e.avail){ e.avail = true; e.availAt = e.doneAt; }
+    saveEvents();
+    renderAll();
+    scheduleSync();
+  }
+
+  function toggleAvail(id, value){
+    var e = events.find(function(ev){ return ev.id === id; });
+    if(!e) return;
+    e.avail = value;
+    e.availAt = Date.now();
     saveEvents();
     renderAll();
     scheduleSync();

@@ -109,7 +109,9 @@
  },
  "eda-evidencia-1": {
   "d": true,
-  "t": 1794334812359
+  "t": 1794334812359,
+  "a": true,
+  "at": 1
  },
  "ac-sesion-01": {
   "d": true,
@@ -129,7 +131,9 @@
  },
  "ac-evidencia-1": {
   "d": true,
-  "t": 1
+  "t": 1,
+  "a": true,
+  "at": 1
  },
  "atp-jueves-01": {
   "d": true,
@@ -165,11 +169,13 @@
  },
  "fc-evidencia-1": {
   "d": true,
-  "t": 1794390877148
+  "t": 1794390877148,
+  "a": true,
+  "at": 1
  },
  "calc-actividad-1": {
-  "d": true,
-  "t": 1794470804436
+  "d": false,
+  "t": 1794652604625
  },
  "calc-sesion-06": {
   "d": true,
@@ -186,5 +192,17 @@
  "eda-sesion-06": {
   "d": true,
   "t": 1794470873917
+ },
+ "ac-evidencia-2": {
+  "a": true,
+  "at": 1
+ },
+ "taf-evidencia-1": {
+  "a": true,
+  "at": 1
+ },
+ "pp-evidencia-1": {
+  "a": true,
+  "at": 1
  }
 }
