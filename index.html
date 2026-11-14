@@ -224,6 +224,18 @@ form.add-form textarea{resize:vertical;min-height:50px}
 .status-msg{font-size:12px;color:var(--muted);min-height:14px}
 .status-msg.err{color:var(--accent)}
 .sync-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer;margin-top:6px;align-self:flex-start}
+/* estado: HECHA = verde apagado; DISPONIBLE y por hacer = naranja llamativo */
+.chip.done{background:#d9eadf!important;color:#2a7d4f!important}
+.chip.done .chip-prefix::before{content:"¹3 "}
+.chip.todo{background:#ff6a00!important;color:#fff!important;box-shadow:0 0 0 2px #ffb27a;font-weight:800}
+.chip.todo .chip-text{opacity:1}
+.event-row.done{background:rgba(42,125,79,.10)}
+.event-row.done .bar{background:#2a7d4f!important}
+.event-row.todo{background:rgba(255,106,0,.14);box-shadow:inset 6px 0 0 #ff6a00}
+.event-row.todo .title{font-weight:800}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .chip.done{background:#1f3a2b!important;color:#7fd1a0!important}
+}
 </style>
 
 <div class="page">
@@ -896,7 +908,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
   function buildChip(e){
     var subj = normSubject(e.subject);
     var chip = document.createElement('div');
-    chip.className = 'chip' + (e.done ? ' done' : '');
+    chip.className = 'chip' + (e.done ? ' done' : '') + (e.type === 'tarea' && e.avail && !e.done ? ' todo' : '');
     chip.style.background = subjectTint(subj, 0.22);
     chip.style.color = subjectColor(subj);
     if(e.type === 'tarea'){
@@ -1010,7 +1022,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
 
   function buildEventRow(e, showDate){
     var row = document.createElement('div');
-    row.className = 'event-row' + (e.done ? ' done' : '');
+    row.className = 'event-row' + (e.done ? ' done' : '') + (e.type === 'tarea' && e.avail && !e.done ? ' todo' : '');
     var subj = normSubject(e.subject);
 
     if(showDate){
