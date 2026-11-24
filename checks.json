@@ -178,8 +178,8 @@
  "calc-actividad-1": {
   "d": false,
   "t": 1794652604625,
-  "a": false,
-  "at": 1795005469158
+  "a": true,
+  "at": 1795511815324
  },
  "calc-sesion-06": {
   "d": true,
