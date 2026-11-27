@@ -153,7 +153,6 @@ header.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
 .chip.done .chip-text{text-decoration:line-through;opacity:.6}
 .chip input[type="checkbox"]{width:14px;height:14px;margin:0;flex-shrink:0;accent-color:var(--fg);cursor:pointer;background:var(--surface)}
 .chip input.avail-cb{accent-color:#2a7d4f}
-.chip input.made-cb{accent-color:#1f6fd1}
 .chip.pending-avail .chip-text{opacity:.85}
 .day .more{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px}
 
@@ -236,7 +235,6 @@ form.add-form textarea{resize:vertical;min-height:50px}
 .event-row.todo{background:rgba(255,106,0,.14);box-shadow:inset 6px 0 0 #ff6a00}
 .event-row.todo .title{font-weight:800}
 .chip.made{background:#1f6fd1!important;color:#fff!important;box-shadow:0 0 0 2px #9cc3f5;font-weight:800}
-.chip.made input.made-cb{accent-color:#0b3d7a}
 .event-row.made{background:rgba(31,111,209,.14);box-shadow:inset 6px 0 0 #1f6fd1}
 .event-row.made .title{font-weight:800}
 /* alerta roja: marcada como entregada pero NO verificada en el Campus */
@@ -520,7 +518,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     {"id":"pp-evidencia-2","date":"2026-12-24","time":"","timeEnd":"","title":"Entrega recomendada — Evidencia 2: diagramas de clases y casos de uso","type":"tarea","subject":"Proyectos de Programación","notes":"Evaluación continua · 5% del portafolio. Caso real con cierta complejidad de gestión. Fecha estimada. Ver explicación en Campus.","done":false},
     {"id":"taf-sesion-11","date":"2026-12-01","time":"20:00","timeEnd":"22:00","title":"Gramáticas","type":"clase","subject":"Teoría de Autómatas y Lenguajes Formales","notes":"","done":false},
     {"id":"pp-sesion-08","date":"2026-12-03","time":"18:00","timeEnd":"20:00","title":"Patrones de diseño","type":"clase","subject":"Proyectos de Programación","notes":"","done":false},
-    {"id":"ec-portafolio-p1-1c","date":"2026-12-06","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 1 (1ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Desarrollo de un algoritmo de manipulación y filtrado de cadenas de texto / estructuras de datos en memoria.","done":false},
+    {"id":"ec-portafolio-p1-1c","date":"2026-12-12","time":"23:59","timeEnd":"","title":"Entrega de portafolio — Evidencia 1 (1ª convocatoria)","type":"tarea","subject":"Estructura de Computadores","notes":"25% del portafolio. Desarrollo de un algoritmo de manipulación y filtrado de cadenas de texto / estructuras de datos en memoria.","done":false},
     {"id":"fc-evidencia-2","date":"2026-12-20","time":"23:59","timeEnd":"","title":"Entrega recomendada — Evidencia 2: diseño e implementación de sistema digital combinacional","type":"tarea","subject":"Fundamentos de Computadores","notes":"Evaluación continua · 15% del portafolio. Ver explicación en Campus.","done":false},
     {"id":"ec-sesion-10","date":"2026-12-07","time":"18:00","timeEnd":"20:00","title":"Organización del procesador I — Componentes hardware y camino de datos","type":"clase","subject":"Estructura de Computadores","notes":"","done":false},
     {"id":"fc-sesion-11","date":"2026-12-07","time":"18:00","timeEnd":"20:00","title":"Tema 4: Introducción al lenguaje ensamblador","type":"clase","subject":"Fundamentos de Computadores","notes":"","done":false},
@@ -664,7 +662,8 @@ form.add-form textarea{resize:vertical;min-height:50px}
     "ac-evidencia-1":{"date":"2026-11-09","time":"23:59"},
     "ac-evidencia-2":{"date":"2026-11-23","time":"23:59"},
     "taf-evidencia-1":{"date":"2026-11-25","time":"05:59"},
-    "fc-evidencia-2":{"date":"2026-12-20","time":"23:59"}
+    "fc-evidencia-2":{"date":"2026-12-20","time":"23:59"},
+    "ec-portafolio-p1-1c":{"date":"2026-12-12","time":"23:59"}
   };
   Object.keys(CAMPUS_DATES).forEach(function(id){ EVENT_FIXES[id] = CAMPUS_DATES[id]; });
   // Tareas ya publicadas en Campus a 14/11/2026 → check «Disponible».
@@ -956,15 +955,6 @@ form.add-form textarea{resize:vertical;min-height:50px}
       acb.addEventListener('click', function(ev){ ev.stopPropagation(); });
       acb.addEventListener('change', function(){ toggleAvail(e.id, acb.checked); });
       chip.appendChild(acb);
-      var mcb = document.createElement('input');
-      mcb.type = 'checkbox';
-      mcb.className = 'made-cb';
-      mcb.checked = isMade(e);
-      mcb.title = 'Hecha';
-      mcb.setAttribute('aria-label', 'Hecha');
-      mcb.addEventListener('click', function(ev){ ev.stopPropagation(); });
-      mcb.addEventListener('change', function(){ toggleMade(e.id, mcb.checked); });
-      chip.appendChild(mcb);
     }
     var cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -1064,7 +1054,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     dayEvents.forEach(function(e){ body.appendChild(buildEventRow(e, false)); });
   }
 
-  function buildEventRow(e, showDate){
+  function buildEventRow(e, showDate, showMade){
     var row = document.createElement('div');
     row.className = 'event-row' + (e.done ? ' done' : '') + taskState(e) + (isAlert(e) ? ' alert' : '');
     var subj = normSubject(e.subject);
@@ -1114,7 +1104,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
       lbD.appendChild(taskCb);
       lbD.appendChild(document.createTextNode('Entregada'));
       checks.appendChild(lbA);
-      checks.appendChild(lbM);
+      if(showMade) checks.appendChild(lbM);
       checks.appendChild(lbD);
       row.appendChild(checks);
     } else {
@@ -1251,7 +1241,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
       h.className = 'conv-head';
       h.textContent = g.label;
       block.appendChild(h);
-      g.items.forEach(function(e){ block.appendChild(buildEventRow(e, true)); });
+      g.items.forEach(function(e){ block.appendChild(buildEventRow(e, true, type === 'tarea')); });
       card.appendChild(block);
     });
   }
