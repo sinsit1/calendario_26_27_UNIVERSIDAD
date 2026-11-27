@@ -153,6 +153,7 @@ header.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
 .chip.done .chip-text{text-decoration:line-through;opacity:.6}
 .chip input[type="checkbox"]{width:14px;height:14px;margin:0;flex-shrink:0;accent-color:var(--fg);cursor:pointer;background:var(--surface)}
 .chip input.avail-cb{accent-color:#2a7d4f}
+.chip input.made-cb{accent-color:#1f6fd1}
 .chip.pending-avail .chip-text{opacity:.85}
 .day .more{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px}
 
@@ -177,6 +178,7 @@ section.list-section h2{font-size:15px;font-weight:600;letter-spacing:.02em;marg
 .event-row .checks label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
 .event-row .checks .task-check{margin-top:0}
 .event-row .checks .avail-check{accent-color:#2a7d4f}
+.event-row .checks .made-check{accent-color:#1f6fd1}
 .event-row .body{flex:1;min-width:0}
 .event-row .title-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;row-gap:2px}
 .subj-prefix{font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:13px}
@@ -224,7 +226,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
 .status-msg{font-size:12px;color:var(--muted);min-height:14px}
 .status-msg.err{color:var(--accent)}
 .sync-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer;margin-top:6px;align-self:flex-start}
-/* estado: HECHA = verde apagado; DISPONIBLE y por hacer = naranja llamativo */
+/* estado: ENTREGADA = verde apagado; HECHA sin entregar = azul; DISPONIBLE y por hacer = naranja llamativo */
 .chip.done{background:#d9eadf!important;color:#2a7d4f!important}
 .chip.done .chip-prefix::before{content:"\2713 "}
 .chip.todo{background:#ff6a00!important;color:#fff!important;box-shadow:0 0 0 2px #ffb27a;font-weight:800}
@@ -233,6 +235,10 @@ form.add-form textarea{resize:vertical;min-height:50px}
 .event-row.done .bar{background:#2a7d4f!important}
 .event-row.todo{background:rgba(255,106,0,.14);box-shadow:inset 6px 0 0 #ff6a00}
 .event-row.todo .title{font-weight:800}
+.chip.made{background:#1f6fd1!important;color:#fff!important;box-shadow:0 0 0 2px #9cc3f5;font-weight:800}
+.chip.made input.made-cb{accent-color:#0b3d7a}
+.event-row.made{background:rgba(31,111,209,.14);box-shadow:inset 6px 0 0 #1f6fd1}
+.event-row.made .title{font-weight:800}
 /* alerta roja: marcada como entregada pero NO verificada en el Campus */
 .chip.alert{background:#d90429!important;color:#fff!important;box-shadow:0 0 0 2px #ff8fa3;font-weight:800}
 .chip.alert .chip-prefix::before{content:"\26A0 "}
@@ -740,7 +746,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }catch(e){}
   }
   // ---- Sincronización de checks entre PCs ----------------------------
-  // Los checks (hecho / no hecho) se guardan también en checks.json dentro del
+  // Los checks (disponible / hecha / entregada) se guardan también en checks.json dentro del
   // repo de GitHub. Al abrir la página se leen de ahí (el repo es público, no
   // hace falta token). Para ESCRIBIR hace falta un token de GitHub (fine-grained,
   // solo este repo, permiso Contents: read/write) que se pega una vez en cada
@@ -764,6 +770,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
       var has = false, v = {};
       if(e.doneAt || e.done){ v.d = !!e.done; v.t = e.doneAt || 1; has = true; }
       if(e.availAt || e.avail){ v.a = !!e.avail; v.at = e.availAt || 1; has = true; }
+      if(e.madeAt || e.made){ v.h = !!e.made; v.ht = e.madeAt || 1; has = true; }
       if(has) o[e.id] = v;
     });
     return o;
@@ -801,6 +808,11 @@ form.add-form textarea{resize:vertical;min-height:50px}
         e.avail = !!rv.a;
         e.availAt = rv.at;
       }
+      if(rv.ht > (e.madeAt || 0)){
+        if(!!e.made !== !!rv.h) changed = true;
+        e.made = !!rv.h;
+        e.madeAt = rv.ht;
+      }
     });
     return changed;
   }
@@ -812,11 +824,12 @@ form.add-form textarea{resize:vertical;min-height:50px}
       var changed = applyRemote(r.data);
       if(changed){ saveEvents(); renderAll(); }
       var merged = Object.assign({}, r.data), needPush = false, loc = localChecks();
-      // Cada check (hecha: d/t, disponible: a/at) se fusiona por separado; gana el más reciente.
+      // Cada check (entregada: d/t, disponible: a/at, hecha: h/ht) se fusiona por separado; gana el más reciente.
       Object.keys(loc).forEach(function(id){
         var l = loc[id], m = merged[id] ? Object.assign({}, merged[id]) : {}, ch = false;
         if(l.t !== undefined && !(m.t >= l.t)){ m.d = l.d; m.t = l.t; ch = true; }
         if(l.at !== undefined && !(m.at >= l.at)){ m.a = l.a; m.at = l.at; ch = true; }
+        if(l.ht !== undefined && !(m.ht >= l.ht)){ m.h = l.h; m.ht = l.ht; ch = true; }
         if(ch){ merged[id] = m; needPush = true; }
       });
       if(!needPush){ setSyncMsg('Checks sincronizados'); return; }
@@ -920,10 +933,17 @@ form.add-form textarea{resize:vertical;min-height:50px}
 
   function isAlert(e){ return !!(e.type === 'tarea' && e.done && e.x && e.xt > (e.doneAt || 0)); }
 
+  // Entregada (done) implica hecha.
+  function isMade(e){ return !!(e.made || e.done); }
+  function taskState(e){
+    if(e.type !== 'tarea' || e.done) return '';
+    return e.made ? ' made' : (e.avail ? ' todo' : '');
+  }
+
   function buildChip(e){
     var subj = normSubject(e.subject);
     var chip = document.createElement('div');
-    chip.className = 'chip' + (e.done ? ' done' : '') + (e.type === 'tarea' && e.avail && !e.done ? ' todo' : '') + (isAlert(e) ? ' alert' : '');
+    chip.className = 'chip' + (e.done ? ' done' : '') + taskState(e) + (isAlert(e) ? ' alert' : '');
     chip.style.background = subjectTint(subj, 0.22);
     chip.style.color = subjectColor(subj);
     if(e.type === 'tarea'){
@@ -936,12 +956,21 @@ form.add-form textarea{resize:vertical;min-height:50px}
       acb.addEventListener('click', function(ev){ ev.stopPropagation(); });
       acb.addEventListener('change', function(){ toggleAvail(e.id, acb.checked); });
       chip.appendChild(acb);
+      var mcb = document.createElement('input');
+      mcb.type = 'checkbox';
+      mcb.className = 'made-cb';
+      mcb.checked = isMade(e);
+      mcb.title = 'Hecha';
+      mcb.setAttribute('aria-label', 'Hecha');
+      mcb.addEventListener('click', function(ev){ ev.stopPropagation(); });
+      mcb.addEventListener('change', function(){ toggleMade(e.id, mcb.checked); });
+      chip.appendChild(mcb);
     }
     var cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = !!e.done;
-    cb.title = e.type === 'tarea' ? 'Hecha (entregada)' : 'Completado';
-    cb.setAttribute('aria-label', e.type === 'tarea' ? 'Hecha' : 'Marcar completado');
+    cb.title = e.type === 'tarea' ? 'Entregada' : 'Completado';
+    cb.setAttribute('aria-label', e.type === 'tarea' ? 'Entregada' : 'Marcar completado');
     cb.addEventListener('click', function(ev){ ev.stopPropagation(); });
     cb.addEventListener('change', function(){ toggleDone(e.id, cb.checked); });
     chip.appendChild(cb);
@@ -1037,7 +1066,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
 
   function buildEventRow(e, showDate){
     var row = document.createElement('div');
-    row.className = 'event-row' + (e.done ? ' done' : '') + (e.type === 'tarea' && e.avail && !e.done ? ' todo' : '') + (isAlert(e) ? ' alert' : '');
+    row.className = 'event-row' + (e.done ? ' done' : '') + taskState(e) + (isAlert(e) ? ' alert' : '');
     var subj = normSubject(e.subject);
 
     if(showDate){
@@ -1057,7 +1086,7 @@ form.add-form textarea{resize:vertical;min-height:50px}
     taskCb.type = 'checkbox';
     taskCb.className = 'task-check';
     taskCb.checked = !!e.done;
-    taskCb.setAttribute('aria-label', e.type === 'tarea' ? 'Hecha' : 'Marcar completado');
+    taskCb.setAttribute('aria-label', e.type === 'tarea' ? 'Entregada' : 'Marcar completado');
     taskCb.addEventListener('change', function(){
       toggleDone(e.id, taskCb.checked);
       row.classList.toggle('done', taskCb.checked);
@@ -1073,10 +1102,19 @@ form.add-form textarea{resize:vertical;min-height:50px}
       availCb.addEventListener('change', function(){ toggleAvail(e.id, availCb.checked); });
       lbA.appendChild(availCb);
       lbA.appendChild(document.createTextNode('Disponible'));
+      var lbM = document.createElement('label');
+      var madeCb = document.createElement('input');
+      madeCb.type = 'checkbox';
+      madeCb.className = 'task-check made-check';
+      madeCb.checked = isMade(e);
+      madeCb.addEventListener('change', function(){ toggleMade(e.id, madeCb.checked); });
+      lbM.appendChild(madeCb);
+      lbM.appendChild(document.createTextNode('Hecha'));
       var lbD = document.createElement('label');
       lbD.appendChild(taskCb);
-      lbD.appendChild(document.createTextNode('Hecha'));
+      lbD.appendChild(document.createTextNode('Entregada'));
       checks.appendChild(lbA);
+      checks.appendChild(lbM);
       checks.appendChild(lbD);
       row.appendChild(checks);
     } else {
@@ -1298,10 +1336,27 @@ form.add-form textarea{resize:vertical;min-height:50px}
   function toggleDone(id, value){
     var e = events.find(function(ev){ return ev.id === id; });
     if(!e) return;
+    var wasDone = e.done;
     e.done = value;
     e.doneAt = Date.now();
-    // Una tarea entregada ya estaba disponible.
-    if(value && e.type === 'tarea' && !e.avail){ e.avail = true; e.availAt = e.doneAt; }
+    if(e.type === 'tarea'){
+      // Una tarea entregada ya estaba hecha y disponible. Al desmarcar «Entregada» sigue hecha.
+      if((value || wasDone) && !e.made){ e.made = true; e.madeAt = e.doneAt; }
+      if(value && !e.avail){ e.avail = true; e.availAt = e.doneAt; }
+    }
+    saveEvents();
+    renderAll();
+    scheduleSync();
+  }
+
+  function toggleMade(id, value){
+    var e = events.find(function(ev){ return ev.id === id; });
+    if(!e) return;
+    e.made = value;
+    e.madeAt = Date.now();
+    if(value && !e.avail){ e.avail = true; e.availAt = e.madeAt; }
+    // Si no está hecha, tampoco puede estar entregada.
+    if(!value && e.done){ e.done = false; e.doneAt = e.madeAt; }
     saveEvents();
     renderAll();
     scheduleSync();
